@@ -1,0 +1,16 @@
+node_modules
+dist
+.vite
+*.tsbuildinfo
+.vercel
+.DS_Store
+*.local
+.env
+.env.*
+!.env.example
+coverage
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
