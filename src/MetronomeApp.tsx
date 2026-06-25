@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 import { AdSlot } from 'adkit';
 import { useMetronome } from '@fretwork/lib';
-import { BeatIndicator } from './components/BeatIndicator';
+import { BeatDots } from './components/BeatDots';
 import { TransportButton } from './components/TransportButton';
 import { BpmControl } from './components/BpmControl';
 import { TimeSignaturePicker } from './components/TimeSignaturePicker';
@@ -40,11 +40,13 @@ export function MetronomeApp() {
 
       {/* Centerpiece */}
       <main className="flex flex-1 flex-col items-center justify-center gap-10 py-8">
-        <BeatIndicator
+        <BeatDots
           beats={m.timeSignature.numerator}
           accents={m.accents}
           accentEnabled={m.accentEnabled}
           currentBeat={m.currentBeat}
+          subdivision={m.subdivision}
+          currentSubdivisionIndex={m.currentSubdivisionIndex}
           isRunning={m.isRunning}
         />
 
