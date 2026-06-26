@@ -4,7 +4,7 @@ import { AdSlot } from 'adkit';
 import { useMetronome } from '@fretwork/lib';
 import { BeatDots } from './components/BeatDots';
 import { TransportButton } from './components/TransportButton';
-import { BpmControl } from './components/BpmControl';
+import { BpmControl, TempoReadout } from './components/BpmControl';
 import { TimeSignaturePicker } from './components/TimeSignaturePicker';
 import { FeelControl } from './components/FeelControl';
 import { VolumeControl } from './components/VolumeControl';
@@ -38,8 +38,8 @@ export function MetronomeApp() {
         </button>
       </header>
 
-      {/* Centerpiece */}
-      <main className="flex flex-1 flex-col items-center justify-center gap-10 py-8">
+      {/* Centerpiece — beats arc over the tempo readout, controls below */}
+      <main className="flex flex-1 flex-col items-center justify-center gap-8 py-8">
         <BeatDots
           beats={m.timeSignature.numerator}
           accents={m.accents}
@@ -48,7 +48,9 @@ export function MetronomeApp() {
           subdivision={m.subdivision}
           currentSubdivisionIndex={m.currentSubdivisionIndex}
           isRunning={m.isRunning}
-        />
+        >
+          <TempoReadout bpm={m.bpm} />
+        </BeatDots>
 
         <BpmControl bpm={m.bpm} onChange={m.setBpm} />
 
