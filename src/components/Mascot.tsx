@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef } from 'react';
 import type { Ref } from 'react';
 import { subdivisionCount } from '@fretwork/lib';
 import type { SubdivisionId } from '@fretwork/lib';
+import { SP, X_MOUTH, conveyorTranslate, pendulumAngle } from './mascotAnim';
 
 /**
  * The "nom" mascot — a wind-up metronome eating notes off a staff.
@@ -21,10 +22,8 @@ const BEAT = 'hsl(var(--degree-third))'; // accent notes / blush (strawberry / b
 const DARK = 'hsl(var(--primary-foreground))'; // mouth + pupils (dark in both themes)
 const STAFF = 'hsl(var(--muted-foreground))'; // staff lines
 
-const SP = 15; // horizontal spacing between notes (user units)
-const X_MOUTH = 67; // a note sits here (entering the metronome) on its tick
 const CLIP_X = 56; // notes are clipped (hidden) left of here
-const MAX_ANGLE = 16; // pendulum swing amplitude (degrees)
+// SP / X_MOUTH and the phase math live in ./mascotAnim (pure + unit-tested).
 
 interface NoteProps {
   x: number;
@@ -121,7 +120,6 @@ export function MascotHero({
   className,
 }: MascotHeroProps) {
   const subsPerBeat = subdivision ? subdivisionCount(subdivision) : 1;
-  const ticksPerMeasure = Math.max(1, beats * subsPerBeat);
   const accentKey = accents.join(',');
 
   // One measure of notes (mirrors BeatDots), repeated enough to fill + loop.
@@ -140,48 +138,62 @@ export function MascotHero({
   const pendulumRef = useRef<SVGGElement>(null);
   const clipId = useId();
 
-  // Monotonic tick counter + timestamp, reconstructed from the engine's
-  // per-measure (currentBeat, currentSubdivisionIndex).
-  const tickRef = useRef(0);
-  const prevInMeasureRef = useRef(-1);
+  // Latest engine position (read by the rAF loop without restarting it) +
+  // a monotonic beat counter (so the pendulum alternates across bar lines).
+  const beatPosRef = useRef(-1);
+  const subPosRef = useRef(0);
+  const monotonicBeatRef = useRef(0);
+  const prevBeatRef = useRef(-1);
   const tickTimeRef = useRef(0);
 
+  // Track ground truth: mirror the current position into refs, advance the
+  // monotonic beat on beat changes, and stamp the tick time for interpolation.
   useEffect(() => {
+    beatPosRef.current = currentBeat;
+    subPosRef.current = currentSubdivisionIndex;
     if (!isRunning || currentBeat < 0) {
-      tickRef.current = 0;
-      prevInMeasureRef.current = -1;
+      monotonicBeatRef.current = 0;
+      prevBeatRef.current = -1;
       return;
     }
-    const inMeasure = currentBeat * subsPerBeat + currentSubdivisionIndex;
-    const prev = prevInMeasureRef.current;
-    if (prev < 0) {
-      tickRef.current = 0; // first tick after start → beat 1 = far left
-    } else {
-      let delta = inMeasure - prev;
-      if (delta < 0) delta += ticksPerMeasure; // wrapped to next measure
-      tickRef.current += delta;
+    if (currentBeat !== prevBeatRef.current) {
+      if (prevBeatRef.current < 0) {
+        monotonicBeatRef.current = 0; // first beat → far left
+      } else {
+        let d = currentBeat - prevBeatRef.current;
+        if (d < 0) d += Math.max(1, beats); // wrapped into the next measure
+        monotonicBeatRef.current += d;
+      }
+      prevBeatRef.current = currentBeat;
     }
-    prevInMeasureRef.current = inMeasure;
     tickTimeRef.current = performance.now();
-  }, [currentBeat, currentSubdivisionIndex, isRunning, subsPerBeat, ticksPerMeasure]);
+  }, [currentBeat, currentSubdivisionIndex, isRunning, beats]);
 
+  // Drive both from the CURRENT position each frame — no accumulation, so tempo
+  // / meter / feel changes re-anchor immediately (like BeatDots).
   useEffect(() => {
-    const apply = (phase: number) => {
-      const off = (((phase * SP) % patternWidth) + patternWidth) % patternWidth;
-      conveyorRef.current?.setAttribute('transform', `translate(${-off} 0)`);
-      const angle = -MAX_ANGLE * Math.cos(Math.PI * (phase / subsPerBeat));
-      pendulumRef.current?.setAttribute('transform', `rotate(${angle.toFixed(3)} 50 80)`);
+    const draw = (inMeasureTick: number, monoBeat: number, sub: number, frac: number) => {
+      conveyorRef.current?.setAttribute(
+        'transform',
+        `translate(${conveyorTranslate(inMeasureTick, frac, patternWidth).toFixed(3)} 0)`,
+      );
+      pendulumRef.current?.setAttribute(
+        'transform',
+        `rotate(${pendulumAngle(monoBeat, sub, frac, subsPerBeat).toFixed(3)} 50 80)`,
+      );
     };
 
     if (!isRunning || bpm <= 0 || prefersReducedMotion()) {
-      apply(0); // rest: note 0 at the mouth, pendulum far left
+      draw(0, 0, 0, 0); // rest: note 0 at the mouth, pendulum far left
       return;
     }
     const tickMs = 60000 / bpm / subsPerBeat;
     let raf = 0;
     const frame = (now: number) => {
       const frac = Math.min(1, Math.max(0, (now - tickTimeRef.current) / tickMs));
-      apply(tickRef.current + frac);
+      const sub = Math.max(0, subPosRef.current);
+      const inMeasureTick = Math.max(0, beatPosRef.current) * subsPerBeat + sub;
+      draw(inMeasureTick, monotonicBeatRef.current, sub, frac);
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
