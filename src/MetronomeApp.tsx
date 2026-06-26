@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 import { AdSlot } from 'adkit';
 import { useMetronome } from '@fretwork/lib';
+import { useTheme } from './theme';
+import { Wordmark } from './components/Wordmark';
+import { ThemeToggle } from './components/ThemeToggle';
+import { MascotHero } from './components/Mascot';
 import { BeatDots } from './components/BeatDots';
 import { TransportButton } from './components/TransportButton';
 import { BpmControl, TempoReadout } from './components/BpmControl';
@@ -18,39 +22,48 @@ import { CalibrationSheet } from './calibration/CalibrationSheet';
  */
 export function MetronomeApp() {
   const m = useMetronome();
+  const { theme, toggle } = useTheme();
   const [calOpen, setCalOpen] = useState(false);
 
   return (
-    <div className="mx-auto flex min-h-full max-w-lg flex-col px-5 py-6">
+    <div className="mx-auto flex min-h-full max-w-lg flex-col px-5 py-4">
       {/* Header */}
       <header className="flex items-center justify-between">
-        <h1 className="font-mono text-xs uppercase tracking-[0.35em] text-muted-foreground">
-          Metronome
-        </h1>
-        <button
-          type="button"
-          onClick={() => setCalOpen(true)}
-          aria-label="Latency calibration"
-          className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-xs text-muted-foreground transition hover:text-pearl"
-        >
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          Calibrate
-        </button>
+        <Wordmark />
+        <div className="flex items-center gap-2">
+          <ThemeToggle theme={theme} onToggle={toggle} />
+          <button
+            type="button"
+            onClick={() => setCalOpen(true)}
+            aria-label="Latency calibration"
+            className="flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-xs text-muted-foreground shadow-[0_3px_0_hsl(var(--shadow))] transition-all hover:text-foreground active:translate-y-[3px] active:shadow-none"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Calibrate
+          </button>
+        </div>
       </header>
 
-      {/* Centerpiece — beats arc over the tempo readout, controls below */}
-      <main className="flex flex-1 flex-col items-center justify-center gap-8 py-8">
-        <BeatDots
-          beats={m.timeSignature.numerator}
-          accents={m.accents}
-          accentEnabled={m.accentEnabled}
-          currentBeat={m.currentBeat}
-          subdivision={m.subdivision}
-          currentSubdivisionIndex={m.currentSubdivisionIndex}
-          isRunning={m.isRunning}
-        >
-          <TempoReadout bpm={m.bpm} />
-        </BeatDots>
+      {/* Centerpiece — beats arc over the tempo readout, the beat-eater mascot in
+          flow just under it, then the controls. The arc width is capped so the
+          pills stay near the number; the mascot is a normal flow item (pulled up
+          with a negative margin) so it never overlaps the readout or the slider. */}
+      <main className="flex flex-1 flex-col items-center justify-center gap-4 py-2">
+        <div className="w-full max-w-[300px]">
+          <BeatDots
+            beats={m.timeSignature.numerator}
+            accents={m.accents}
+            accentEnabled={m.accentEnabled}
+            currentBeat={m.currentBeat}
+            subdivision={m.subdivision}
+            currentSubdivisionIndex={m.currentSubdivisionIndex}
+            isRunning={m.isRunning}
+          >
+            <TempoReadout bpm={m.bpm} />
+          </BeatDots>
+        </div>
+
+        <MascotHero className="pointer-events-none -mt-6 h-16 w-16" />
 
         <BpmControl bpm={m.bpm} onChange={m.setBpm} />
 
@@ -58,7 +71,7 @@ export function MetronomeApp() {
       </main>
 
       {/* Controls */}
-      <footer className="flex flex-col items-center gap-6 pt-4">
+      <footer className="flex flex-col items-center gap-4 pt-2">
         <TimeSignaturePicker value={m.timeSignature.id} onChange={m.setTimeSignature} />
         <FeelControl
           subdivision={m.subdivision}

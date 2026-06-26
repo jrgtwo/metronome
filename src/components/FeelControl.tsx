@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import clsx from 'clsx';
 import {
   FEEL_OPTIONS,
@@ -18,6 +19,18 @@ interface FeelControlProps {
 
 const SWING_MIN = 0.5;
 const SWING_MAX = 0.95;
+
+/** Compact labels so all seven feels fit one line on a phone; the full
+ *  `FEEL_LABELS` text is kept as the accessible name + tooltip. */
+const FEEL_SHORT: Record<Feel, string> = {
+  off: 'Off',
+  'straight-8ths': '8th',
+  'swung-8ths': 'Sw 8th',
+  triplets: 'Trip',
+  'straight-16ths': '16th',
+  'swung-16ths': 'Sw 16th',
+  sextuplets: 'Sext',
+};
 
 /**
  * Presents the underlying (subdivision, swing) pair as one friendly "feel"
@@ -40,30 +53,35 @@ export function FeelControl({ subdivision, swing, onSubdivision, onSwing }: Feel
   };
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex w-full flex-col items-center gap-2">
       <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
         Feel
       </span>
-      <div className="flex flex-wrap justify-center gap-1.5">
-        {FEEL_OPTIONS.map((feel) => {
-          const selected = feel === current;
-          return (
-            <button
-              key={feel}
-              type="button"
-              onClick={() => selectFeel(feel)}
-              aria-pressed={selected}
-              className={clsx(
-                'rounded-md px-3 py-1.5 text-xs font-medium transition',
-                selected
-                  ? 'bg-degree-root text-primary-foreground'
-                  : 'bg-secondary text-muted-foreground hover:text-pearl',
-              )}
-            >
-              {FEEL_LABELS[feel]}
-            </button>
-          );
-        })}
+      {/* One centered line, sized to fit a phone without scrolling. */}
+      <div className="flex w-full justify-center">
+        <div className="flex max-w-full flex-nowrap gap-0.5 rounded-full bg-card p-1 shadow-[0_3px_0_hsl(var(--shadow))]">
+          {FEEL_OPTIONS.map((feel) => {
+            const selected = feel === current;
+            return (
+              <button
+                key={feel}
+                type="button"
+                onClick={() => selectFeel(feel)}
+                aria-pressed={selected}
+                title={FEEL_LABELS[feel]}
+                aria-label={FEEL_LABELS[feel]}
+                className={clsx(
+                  'shrink-0 whitespace-nowrap rounded-full px-1.5 py-1.5 text-xs font-medium transition',
+                  selected
+                    ? 'bg-degree-root text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {FEEL_SHORT[feel]}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Swing intensity — reserved height; inert when the feel isn't swung. */}
@@ -81,6 +99,7 @@ export function FeelControl({ subdivision, swing, onSubdivision, onSwing }: Feel
           onChange={(e) => onSwing(Number(e.target.value))}
           aria-label="Swing intensity"
           className="metro-range w-32 disabled:cursor-not-allowed"
+          style={{ '--range-fill': `${((swing - SWING_MIN) / (SWING_MAX - SWING_MIN)) * 100}%` } as CSSProperties}
         />
         <span className="w-8 font-mono text-[10px] tabular-nums text-muted-foreground">
           {Math.round(((swing - SWING_MIN) / (SWING_MAX - SWING_MIN)) * 100)}%

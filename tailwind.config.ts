@@ -52,6 +52,10 @@ const config: Config = {
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        // Rounded display face for the playful theme's wordmark (the standard
+        // theme leaves it unused). Body/control type in that theme is swapped to
+        // Fredoka/Baloo via the `:root.theme-playful` overrides in index.css.
+        display: ['Fredoka', '"Baloo 2"', 'ui-rounded', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',

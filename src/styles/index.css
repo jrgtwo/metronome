@@ -2,6 +2,90 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Themes — two "fun" reskins of the lib's semantic tokens. Both override VALUES
+ * of existing variables (no new color names in tailwind.config.ts) plus a few
+ * app-level theme vars (--shadow for 3D controls, --mint for the volume slider),
+ * so every component re-skins without per-theme branching.
+ *
+ * NOTE: `--pearl` is a near-white "hardware" color in the lib; the LIGHT theme
+ * re-tunes it dark so BeatDots' regular beat-pills (`bg-pearl`) read on cream.
+ * The dark theme keeps it light. A future refactor could give BeatDots a
+ * dedicated `--beat` token in the lib instead of leaning on `--pearl`.
+ */
+:root.theme-light {
+  /* Retro 70s — warm cream, mustard / burnt-orange / avocado. */
+  --background: 38 34% 85%;
+  --foreground: 24 32% 22%;
+  --card: 40 38% 91%;
+  --card-foreground: 24 32% 22%;
+  --popover: 40 38% 91%;
+  --popover-foreground: 24 32% 22%;
+
+  --primary: 42 70% 50%;
+  --primary-foreground: 30 46% 14%;
+  --secondary: 38 26% 79%;
+  --secondary-foreground: 24 32% 22%;
+  --muted: 38 26% 82%;
+  --muted-foreground: 28 18% 40%;
+  --accent: 38 26% 82%;
+  --accent-foreground: 24 32% 22%;
+  --border: 38 26% 74%;
+  --input: 38 26% 74%;
+  --ring: 42 70% 50%;
+  --radius: 0.9rem;
+
+  --degree-root: 42 70% 50%; /* mustard: slider fill, active controls, mascot */
+  --degree-third: 18 62% 48%; /* burnt orange: transport, wordmark "nom", mute */
+  --pearl: 24 32% 26%; /* see NOTE — dark so beats read on cream */
+  --mint: 70 32% 42%; /* avocado: volume slider */
+  --shadow: 38 28% 70%; /* 3D button offset */
+}
+
+:root.theme-dark {
+  /* Warm Dark Playful — dim espresso, amber / strawberry / mint. */
+  --background: 26 16% 13%;
+  --foreground: 36 30% 90%;
+  --card: 26 14% 19%;
+  --card-foreground: 36 30% 90%;
+  --popover: 26 14% 19%;
+  --popover-foreground: 36 30% 90%;
+
+  --primary: 38 92% 60%;
+  --primary-foreground: 26 42% 12%;
+  --secondary: 26 12% 24%;
+  --secondary-foreground: 36 30% 90%;
+  --muted: 26 12% 22%;
+  --muted-foreground: 30 12% 64%;
+  --accent: 26 12% 24%;
+  --accent-foreground: 36 30% 90%;
+  --border: 26 12% 28%;
+  --input: 26 12% 28%;
+  --ring: 38 92% 60%;
+  --radius: 0.9rem;
+
+  --degree-root: 38 92% 60%; /* amber */
+  --degree-third: 4 80% 64%; /* strawberry: transport, wordmark "nom", mute */
+  --pearl: 36 30% 88%; /* cream beats/readout on the dark surface */
+  --mint: 158 42% 54%;
+  --shadow: 26 30% 5%;
+}
+
+/* Both themes are "fun": rounded type everywhere. The readout + mono labels
+   become Fredoka; sans/body text becomes Baloo. */
+:root.theme-light,
+:root.theme-dark {
+  font-family: "Baloo 2", ui-rounded, system-ui, sans-serif;
+}
+:root.theme-light .font-mono,
+:root.theme-dark .font-mono {
+  font-family: "Fredoka", "Baloo 2", ui-rounded, monospace;
+}
+:root.theme-light .font-sans,
+:root.theme-dark .font-sans {
+  font-family: "Baloo 2", ui-rounded, system-ui, sans-serif;
+}
+
 @layer base {
   html,
   body,
@@ -18,21 +102,39 @@
 }
 
 @layer components {
-  /* Warm amber range slider, shared by the BPM / swing / volume controls. */
+  /*
+   * Chunky themed range slider, shared by the BPM / swing / volume controls.
+   * The filled portion is a gradient driven by `--range-fill` (a percentage the
+   * control sets inline from its value); the thumb is a "white" puck (--card)
+   * ringed in the fill color. `--range-color` defaults to amber/mustard; the
+   * `.metro-range--mint` modifier swaps it for the volume slider.
+   */
   .metro-range {
-    @apply h-1.5 cursor-pointer appearance-none rounded-full bg-secondary;
-    accent-color: hsl(var(--degree-root));
+    --range-color: var(--degree-root);
+    --range-fill: 50%;
+    @apply h-2 cursor-pointer appearance-none rounded-full;
+    background: linear-gradient(
+      to right,
+      hsl(var(--range-color)) var(--range-fill),
+      hsl(var(--secondary)) var(--range-fill)
+    );
+  }
+  .metro-range--mint {
+    --range-color: var(--mint);
   }
   .metro-range::-webkit-slider-thumb {
-    @apply h-4 w-4 appearance-none rounded-full;
-    background: hsl(var(--degree-root));
-    box-shadow: 0 0 0 4px hsl(var(--degree-root) / 0.15);
+    @apply h-5 w-5 appearance-none rounded-full;
+    background: hsl(var(--card));
+    border: 3px solid hsl(var(--range-color));
+    box-shadow: 0 1px 3px hsl(var(--shadow) / 0.8);
   }
   .metro-range::-moz-range-thumb {
-    @apply h-4 w-4 rounded-full border-0;
-    background: hsl(var(--degree-root));
+    @apply h-5 w-5 rounded-full;
+    background: hsl(var(--card));
+    border: 3px solid hsl(var(--range-color));
+    box-shadow: 0 1px 3px hsl(var(--shadow) / 0.8);
   }
   .metro-range:disabled {
-    accent-color: hsl(var(--muted-foreground));
+    opacity: 0.45;
   }
 }
