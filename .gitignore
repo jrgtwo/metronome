@@ -18,7 +18,6 @@ coverage
 .claude
 CLAUDE.md
 AGENTS.md
-
-# Superpowers (brainstorm mockups + design specs)
 .superpowers/
 docs/superpowers/
+docs
