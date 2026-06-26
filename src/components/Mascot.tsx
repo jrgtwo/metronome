@@ -1,45 +1,223 @@
+import { useEffect, useId, useMemo, useRef } from 'react';
+import type { Ref } from 'react';
+import { subdivisionCount } from '@fretwork/lib';
+import type { SubdivisionId } from '@fretwork/lib';
+
 /**
- * The "nom" beat-eater — a friendly creature that chomps each beat. Placeholder
- * fidelity (a polished character design is a later branding task). Fills use the
- * theme tokens so the mascot tracks whatever palette is active:
- *   body  = --degree-root (amber)   mouth/eyes = --foreground (ink)
- *   whites = --card                 cheek = --degree-third (strawberry)
- * Both marks are decorative (aria-hidden); meaning comes from the wordmark text.
+ * The "nom" mascot — a wind-up metronome eating notes off a staff.
+ *   - <MascotMark>  the bare metronome, for the header wordmark (small, static).
+ *   - <MascotHero>  the metronome + a live staff of notes, PHASE-LOCKED to the
+ *     engine's beat clock (the same `currentBeat`/`currentSubdivisionIndex` that
+ *     drives BeatDots): the pendulum is at an extreme on every beat (far left on
+ *     beat 1), and each note reaches the metronome exactly on its tick.
+ *
+ * One rAF loop interpolates between tick timestamps to drive both the pendulum
+ * rotation and the note conveyor. Colors come from theme tokens; `BODY_D` is a
+ * fixed mid-amber used only for on-body shading (reads on either surface).
  */
+const BODY = 'hsl(var(--degree-root))'; // metronome body + beat notes (amber / mustard)
+const BODY_D = 'hsl(38 60% 46%)'; // base, pendulum — on-body shading
+const BEAT = 'hsl(var(--degree-third))'; // accent notes / blush (strawberry / burnt orange)
+const DARK = 'hsl(var(--primary-foreground))'; // mouth + pupils (dark in both themes)
+const STAFF = 'hsl(var(--muted-foreground))'; // staff lines
 
-const BODY = 'hsl(var(--degree-root))';
-const INK = 'hsl(var(--foreground))';
-const WHITE = 'hsl(var(--card))';
-const CHEEK = 'hsl(var(--degree-third))';
+const SP = 15; // horizontal spacing between notes (user units)
+const X_MOUTH = 67; // a note sits here (entering the metronome) on its tick
+const CLIP_X = 56; // notes are clipped (hidden) left of here
+const MAX_ANGLE = 16; // pendulum swing amplitude (degrees)
 
-/** Small mark that sits beside the playful wordmark. */
+interface NoteProps {
+  x: number;
+  y: number;
+  s?: number;
+  color?: string;
+  opacity?: number;
+}
+
+/** A small eighth-note (notehead + stem). */
+function Note({ x, y, s = 1, color = BEAT, opacity = 1 }: NoteProps) {
+  return (
+    <g opacity={opacity}>
+      <ellipse cx={x} cy={y} rx={5.4 * s} ry={4.3 * s} transform={`rotate(-18 ${x} ${y})`} fill={color} />
+      <rect x={x + 3.7 * s} y={y - 15 * s} width={2 * s} height={13 * s} rx={1} fill={color} />
+    </g>
+  );
+}
+
+/** Pendulum (rod + weight). When `pendulumRef` is set the parent drives its
+ *  rotation; otherwise it rests upright (the static header mark). */
+function Pendulum({ pendulumRef }: { pendulumRef?: Ref<SVGGElement> }) {
+  return (
+    <g ref={pendulumRef}>
+      <line x1="50" y1="80" x2="50" y2="16" stroke={BODY_D} strokeWidth="3" strokeLinecap="round" />
+      <rect x="44.5" y="40" width="11" height="8" rx="2" fill={BEAT} />
+    </g>
+  );
+}
+
+/** The classic upright metronome, centered in a 100×100 box. */
+function Metronome({ pendulumRef }: { pendulumRef?: Ref<SVGGElement> }) {
+  return (
+    <>
+      <rect x="24" y="84" width="52" height="9" rx="4.5" fill={BODY_D} />
+      <path d="M30 86 L39 33 Q40 28 45 28 L55 28 Q60 28 61 33 L70 86 Z" fill={BODY} />
+      <Pendulum pendulumRef={pendulumRef} />
+      <circle cx="44" cy="58" r="5" fill="#fff" />
+      <circle cx="45.2" cy="59" r="2.5" fill={DARK} />
+      <circle cx="56" cy="58" r="5" fill="#fff" />
+      <circle cx="57.2" cy="59" r="2.5" fill={DARK} />
+      <path d="M42 69 Q50 80 58 69 Q50 74 42 69 Z" fill={DARK} />
+      <circle cx="40" cy="66" r="3" fill={BEAT} opacity="0.4" />
+      <circle cx="60" cy="66" r="3" fill={BEAT} opacity="0.4" />
+    </>
+  );
+}
+
+/** Header mark: just the metronome (the staff is unreadable at this size). */
 export function MascotMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
-      <circle cx="20" cy="20" r="18" fill={BODY} />
-      {/* open mouth, a wedge taken out toward the beat */}
-      <path d="M20 20 38 11a18 18 0 0 1 0 18L20 20Z" fill={INK} />
-      <circle cx="15" cy="14" r="2.4" fill={INK} />
+    <svg viewBox="0 0 100 100" className={className} aria-hidden="true">
+      <Metronome />
     </svg>
   );
 }
 
-/** Hero beat-eater for the playful theme's centerpiece. */
-export function MascotHero({ className }: { className?: string }) {
+type ItemKind = 'accent' | 'main' | 'sub';
+
+const STYLE_BY_KIND: Record<ItemKind, { y: number; s: number; color: string; opacity?: number }> = {
+  accent: { y: 68, s: 0.92, color: BEAT },
+  main: { y: 72, s: 0.76, color: BODY },
+  sub: { y: 75, s: 0.52, color: BODY, opacity: 0.6 },
+};
+
+interface MascotHeroProps {
+  bpm?: number;
+  isRunning?: boolean;
+  beats?: number;
+  accents?: readonly number[];
+  accentEnabled?: boolean;
+  subdivision?: SubdivisionId;
+  /** Engine beat clock — drives phase-lock with BeatDots. */
+  currentBeat?: number;
+  currentSubdivisionIndex?: number;
+  className?: string;
+}
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+}
+
+/** Centerpiece: the metronome eating a meter/feel-derived stream of notes,
+ *  phase-locked to the beat clock. */
+export function MascotHero({
+  bpm = 0,
+  isRunning = false,
+  beats = 4,
+  accents = [],
+  accentEnabled = true,
+  subdivision,
+  currentBeat = -1,
+  currentSubdivisionIndex = 0,
+  className,
+}: MascotHeroProps) {
+  const subsPerBeat = subdivision ? subdivisionCount(subdivision) : 1;
+  const ticksPerMeasure = Math.max(1, beats * subsPerBeat);
+  const accentKey = accents.join(',');
+
+  // One measure of notes (mirrors BeatDots), repeated enough to fill + loop.
+  const { items, patternWidth, copies } = useMemo(() => {
+    const its: ItemKind[] = [];
+    for (let b = 0; b < beats; b++) {
+      its.push(accentEnabled && accents.includes(b) ? 'accent' : 'main');
+      for (let s = 1; s < subsPerBeat; s++) its.push('sub');
+    }
+    const pw = Math.max(1, its.length) * SP;
+    return { items: its, patternWidth: pw, copies: Math.max(2, Math.ceil((138 - X_MOUTH) / pw) + 1) };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [beats, subsPerBeat, accentEnabled, accentKey]);
+
+  const conveyorRef = useRef<SVGGElement>(null);
+  const pendulumRef = useRef<SVGGElement>(null);
+  const clipId = useId();
+
+  // Monotonic tick counter + timestamp, reconstructed from the engine's
+  // per-measure (currentBeat, currentSubdivisionIndex).
+  const tickRef = useRef(0);
+  const prevInMeasureRef = useRef(-1);
+  const tickTimeRef = useRef(0);
+
+  useEffect(() => {
+    if (!isRunning || currentBeat < 0) {
+      tickRef.current = 0;
+      prevInMeasureRef.current = -1;
+      return;
+    }
+    const inMeasure = currentBeat * subsPerBeat + currentSubdivisionIndex;
+    const prev = prevInMeasureRef.current;
+    if (prev < 0) {
+      tickRef.current = 0; // first tick after start → beat 1 = far left
+    } else {
+      let delta = inMeasure - prev;
+      if (delta < 0) delta += ticksPerMeasure; // wrapped to next measure
+      tickRef.current += delta;
+    }
+    prevInMeasureRef.current = inMeasure;
+    tickTimeRef.current = performance.now();
+  }, [currentBeat, currentSubdivisionIndex, isRunning, subsPerBeat, ticksPerMeasure]);
+
+  useEffect(() => {
+    const apply = (phase: number) => {
+      const off = (((phase * SP) % patternWidth) + patternWidth) % patternWidth;
+      conveyorRef.current?.setAttribute('transform', `translate(${-off} 0)`);
+      const angle = -MAX_ANGLE * Math.cos(Math.PI * (phase / subsPerBeat));
+      pendulumRef.current?.setAttribute('transform', `rotate(${angle.toFixed(3)} 50 80)`);
+    };
+
+    if (!isRunning || bpm <= 0 || prefersReducedMotion()) {
+      apply(0); // rest: note 0 at the mouth, pendulum far left
+      return;
+    }
+    const tickMs = 60000 / bpm / subsPerBeat;
+    let raf = 0;
+    const frame = (now: number) => {
+      const frac = Math.min(1, Math.max(0, (now - tickTimeRef.current) / tickMs));
+      apply(tickRef.current + frac);
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, [isRunning, bpm, subsPerBeat, patternWidth]);
+
   return (
-    <svg viewBox="0 0 120 120" className={className} aria-hidden="true">
-      {/* soft ground shadow */}
-      <ellipse cx="60" cy="110" rx="34" ry="6" fill={INK} opacity="0.08" />
-      <circle cx="60" cy="64" r="46" fill={BODY} />
-      {/* open mouth chomping toward the active beat */}
-      <path d="M60 64 100 40 A46 46 0 0 1 100 88 Z" fill={INK} />
-      {/* googly eyes */}
-      <circle cx="44" cy="42" r="8" fill={WHITE} />
-      <circle cx="46" cy="43" r="4" fill={INK} />
-      <circle cx="68" cy="40" r="8" fill={WHITE} />
-      <circle cx="70" cy="41" r="4" fill={INK} />
-      {/* cheek blush */}
-      <circle cx="34" cy="74" r="6" fill={CHEEK} opacity="0.5" />
+    <svg viewBox="0 0 138 100" className={className} aria-hidden="true">
+      <defs>
+        <clipPath id={clipId}>
+          <rect x={CLIP_X} y="54" width={138 - CLIP_X} height="42" />
+        </clipPath>
+      </defs>
+      <line x1="68" y1="64" x2="130" y2="64" stroke={STAFF} strokeWidth="1.4" />
+      <line x1="68" y1="72" x2="130" y2="72" stroke={STAFF} strokeWidth="1.4" />
+      <line x1="68" y1="80" x2="130" y2="80" stroke={STAFF} strokeWidth="1.4" />
+      <g clipPath={`url(#${clipId})`}>
+        <g ref={conveyorRef}>
+          {Array.from({ length: copies }).flatMap((_, c) =>
+            items.map((kind, i) => {
+              const st = STYLE_BY_KIND[kind];
+              return (
+                <Note
+                  key={`${c}-${i}`}
+                  x={X_MOUTH + (c * items.length + i) * SP}
+                  y={st.y}
+                  s={st.s}
+                  color={st.color}
+                  opacity={st.opacity}
+                />
+              );
+            }),
+          )}
+        </g>
+      </g>
+      <Metronome pendulumRef={pendulumRef} />
     </svg>
   );
 }

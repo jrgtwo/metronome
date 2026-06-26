@@ -8,14 +8,19 @@ const BPM_MAX = 240;
 const stepperClass =
   'grid h-10 w-10 shrink-0 place-items-center rounded-full bg-card text-foreground shadow-[0_3px_0_hsl(var(--shadow))] transition-all hover:brightness-95 active:translate-y-[3px] active:shadow-none';
 
-/** The hero tempo readout — sits at the center of the beat arc. */
-export function TempoReadout({ bpm }: { bpm: number }) {
+/** The hero tempo readout — sits at the center of the beat arc. `compact`
+ *  shrinks it when the metronome mascot is enlarged. */
+export function TempoReadout({ bpm, compact = false }: { bpm: number; compact?: boolean }) {
   return (
     <div className="flex flex-col items-center">
-      <span className="font-mono text-7xl font-semibold leading-none tracking-tight text-pearl tabular-nums">
+      <span
+        className={`font-mono font-semibold leading-none tracking-tight text-pearl tabular-nums transition-[font-size] duration-300 ease-out ${
+          compact ? 'text-4xl' : 'text-7xl'
+        }`}
+      >
         {bpm}
       </span>
-      <span className="mt-1 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
+      <span className="mt-1 font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
         BPM
       </span>
     </div>

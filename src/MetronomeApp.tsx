@@ -24,6 +24,7 @@ export function MetronomeApp() {
   const m = useMetronome();
   const { theme, toggle } = useTheme();
   const [calOpen, setCalOpen] = useState(false);
+  const [heroExpanded, setHeroExpanded] = useState(false);
 
   return (
     <div className="mx-auto flex min-h-full max-w-lg flex-col px-5 py-4">
@@ -49,7 +50,13 @@ export function MetronomeApp() {
           pills stay near the number; the mascot is a normal flow item (pulled up
           with a negative margin) so it never overlaps the readout or the slider. */}
       <main className="flex flex-1 flex-col items-center justify-center gap-4 py-2">
-        <div className="w-full max-w-[300px]">
+        {/* Beats arc + tempo readout shrink when the metronome is enlarged, so
+            the emphasis shifts to the metronome without leaving the screen. */}
+        <div
+          className={`w-full transition-[max-width] duration-300 ease-out ${
+            heroExpanded ? 'max-w-[170px]' : 'max-w-[300px]'
+          }`}
+        >
           <BeatDots
             beats={m.timeSignature.numerator}
             accents={m.accents}
@@ -59,11 +66,32 @@ export function MetronomeApp() {
             currentSubdivisionIndex={m.currentSubdivisionIndex}
             isRunning={m.isRunning}
           >
-            <TempoReadout bpm={m.bpm} />
+            <TempoReadout bpm={m.bpm} compact={heroExpanded} />
           </BeatDots>
         </div>
 
-        <MascotHero className="pointer-events-none -mt-6 h-16 w-16" />
+        <button
+          type="button"
+          onClick={() => setHeroExpanded((v) => !v)}
+          aria-label={heroExpanded ? 'Shrink metronome' : 'Enlarge metronome'}
+          aria-pressed={heroExpanded}
+          title={heroExpanded ? 'Tap to shrink' : 'Tap to enlarge'}
+          className="-mt-4 rounded-xl transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <MascotHero
+            bpm={m.bpm}
+            isRunning={m.isRunning}
+            beats={m.timeSignature.numerator}
+            accents={m.accents}
+            accentEnabled={m.accentEnabled}
+            subdivision={m.subdivision}
+            currentBeat={m.currentBeat}
+            currentSubdivisionIndex={m.currentSubdivisionIndex}
+            className={`pointer-events-none w-auto transition-[height] duration-300 ease-out ${
+              heroExpanded ? 'h-44' : 'h-20'
+            }`}
+          />
+        </button>
 
         <BpmControl bpm={m.bpm} onChange={m.setBpm} />
 
