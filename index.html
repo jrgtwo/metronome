@@ -137,11 +137,62 @@
 
     <!-- The crawlable About/FAQ copy lives in #about-content (in <body>) but is
          hidden here — the app reads it on mount and surfaces it in a modal (see
-         AboutModal.tsx). It's real, user-reachable content, just not a page slab. -->
+         AboutModal.tsx). It's real, user-reachable content, just not a page slab.
+
+         The rest is CRITICAL, self-contained CSS for the #ps paint-shell so it
+         renders fully themed BEFORE the external stylesheet or web fonts load —
+         no unstyled white flash (esp. in dev, where Vite injects CSS via JS).
+         Literal theme values mirror src/styles/index.css; React replaces #ps on
+         mount. The theme class is set by the pre-paint script below. -->
     <style>
-      #about-content {
-        display: none;
+      #about-content { display: none; }
+
+      :root.theme-light { background: hsl(38 34% 85%); }
+      :root.theme-dark { background: hsl(26 16% 13%); }
+
+      #ps {
+        box-sizing: border-box;
+        min-height: 100%;
+        max-width: 32rem;
+        margin: 0 auto;
+        padding: 1rem 1.25rem;
+        display: flex;
+        flex-direction: column;
+        font-family: "Baloo 2", ui-rounded, system-ui, sans-serif;
       }
+      #ps .ps-head { display: flex; align-items: center; justify-content: space-between; }
+      #ps .ps-brand { display: flex; align-items: center; gap: 0.5rem; font-size: 1.25rem; font-weight: 700; font-family: "Fredoka", ui-rounded, system-ui, sans-serif; }
+      #ps .ps-actions { display: flex; gap: 0.5rem; }
+      #ps .ps-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 0.5rem 0; }
+      #ps .ps-foot { display: flex; flex-direction: column; align-items: center; gap: 1rem; width: 100%; padding-top: 0.5rem; }
+      #ps .ps-num { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 4.5rem; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
+      #ps .ps-bpm { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.3em; margin-top: 0.25rem; }
+      #ps .ps-slider { display: flex; align-items: center; gap: 0.75rem; width: 100%; max-width: 20rem; }
+      #ps .c { background: hsl(40 38% 91%); }
+      #ps .logo { width: 1.75rem; height: 1.75rem; border-radius: 9999px; }
+      #ps .pill { height: 2rem; border-radius: 9999px; }
+      #ps .pill-sm { width: 2rem; }
+      #ps .pill-lg { width: 6rem; }
+      #ps .mascot { width: 9rem; height: 5rem; border-radius: 1rem; margin-top: -0.25rem; }
+      #ps .dot { width: 2.5rem; height: 2.5rem; border-radius: 9999px; }
+      #ps .bar { flex: 1; height: 0.5rem; border-radius: 9999px; }
+      #ps .play { width: 5rem; height: 5rem; border-radius: 9999px; }
+      #ps .seg { width: 100%; max-width: 28rem; height: 2.25rem; border-radius: 9999px; }
+      #ps .swing { width: 100%; max-width: 20rem; height: 0.5rem; border-radius: 9999px; }
+      #ps .vol { width: 100%; max-width: 20rem; height: 2.25rem; border-radius: 9999px; }
+      #ps .ad { width: 100%; max-width: 24rem; height: 4rem; border-radius: 1rem; margin-top: 0.5rem; }
+
+      :root.theme-light #ps { color: hsl(24 32% 22%); }
+      :root.theme-light #ps .ps-num { color: hsl(24 32% 26%); }
+      :root.theme-light #ps .ps-bpm { color: hsl(28 18% 40%); }
+      :root.theme-light #ps .accent { color: hsl(18 62% 48%); }
+      :root.theme-light #ps .play { background: hsl(18 62% 48%); }
+      :root.theme-dark #ps { color: hsl(36 30% 90%); }
+      :root.theme-dark #ps .c { background: hsl(26 14% 19%); }
+      :root.theme-dark #ps .ps-num { color: hsl(36 30% 88%); }
+      :root.theme-dark #ps .ps-bpm { color: hsl(30 12% 64%); }
+      :root.theme-dark #ps .accent { color: hsl(4 80% 64%); }
+      :root.theme-dark #ps .play { background: hsl(4 80% 64%); }
     </style>
 
     <!-- Apply the saved (or default 'light') theme before first paint to avoid a
@@ -166,40 +217,29 @@
          this roughly in sync with MetronomeApp's layout so the swap doesn't shift
          (CLS). Uses system-fallback fonts so it never waits on web fonts. -->
     <div id="root">
-      <div class="mx-auto flex min-h-full max-w-lg flex-col px-5 py-4" aria-hidden="true">
-        <!-- header -->
-        <div class="flex items-center justify-between">
-          <span class="flex items-center gap-2">
-            <span class="h-7 w-7 shrink-0 rounded-full bg-card"></span>
-            <span class="font-display text-xl font-bold tracking-tight text-foreground">metro<span class="text-degree-third">nomnom</span></span>
-          </span>
-          <span class="flex items-center gap-2">
-            <span class="h-8 w-8 rounded-full bg-card"></span>
-            <span class="h-8 w-24 rounded-full bg-card"></span>
-          </span>
+      <div id="ps" aria-hidden="true">
+        <div class="ps-head">
+          <span class="ps-brand"><span class="logo c"></span><span>metro<span class="accent">nomnom</span></span></span>
+          <span class="ps-actions"><span class="pill pill-sm c"></span><span class="pill pill-lg c"></span></span>
         </div>
-        <!-- main -->
-        <div class="flex flex-1 flex-col items-center justify-center gap-4 py-2">
-          <div class="h-9"></div>
-          <div class="flex flex-col items-center">
-            <span class="font-mono text-7xl font-semibold leading-none tracking-tight text-pearl">120</span>
-            <span class="mt-1 font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">BPM</span>
+        <div class="ps-main">
+          <div style="height: 2.25rem"></div>
+          <div style="display:flex;flex-direction:column;align-items:center">
+            <span class="ps-num">120</span>
+            <span class="ps-bpm">BPM</span>
           </div>
-          <div class="-mt-1 h-20 w-36 rounded-2xl bg-card"></div>
-          <div class="flex w-full max-w-xs items-center gap-3">
-            <span class="h-10 w-10 rounded-full bg-card"></span>
-            <span class="h-2 flex-1 rounded-full bg-card"></span>
-            <span class="h-10 w-10 rounded-full bg-card"></span>
+          <span class="mascot c"></span>
+          <div class="ps-slider">
+            <span class="dot c"></span><span class="bar c"></span><span class="dot c"></span>
           </div>
-          <div class="h-20 w-20 rounded-full bg-degree-third"></div>
+          <span class="play"></span>
         </div>
-        <!-- footer -->
-        <div class="flex flex-col items-center gap-4 pt-2">
-          <div class="h-9 w-full max-w-md rounded-full bg-card"></div>
-          <div class="h-9 w-full max-w-md rounded-full bg-card"></div>
-          <div class="h-2 w-full max-w-xs rounded-full bg-card"></div>
-          <div class="h-9 w-full max-w-xs rounded-full bg-card"></div>
-          <div class="mt-2 h-16 w-full max-w-sm rounded-xl bg-card"></div>
+        <div class="ps-foot">
+          <span class="seg c"></span>
+          <span class="seg c"></span>
+          <span class="swing c"></span>
+          <span class="vol c"></span>
+          <span class="ad c"></span>
         </div>
       </div>
     </div>
