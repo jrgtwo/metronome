@@ -4,14 +4,155 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>metronomnom — a latency-honest metronome</title>
-    <meta name="description" content="A focused, latency-honest metronome. Tap a tempo, pick a feel, keep time." />
+
+    <!-- Searchable fields lead with the keyword, not internal jargon. -->
+    <title>metronomnom — Free Online Metronome</title>
+    <meta
+      name="description"
+      content="A free online metronome with adjustable tempo (BPM), time signatures, subdivisions, and swing/feel — and audio-latency calibration so every beat lands on time."
+    />
+    <link rel="canonical" href="https://metronomnom.com/" />
     <meta name="theme-color" content="#16130f" />
+
+    <!-- Open Graph (Facebook, iMessage, Slack, Discord, LinkedIn). -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="metronomnom" />
+    <meta property="og:url" content="https://metronomnom.com/" />
+    <meta property="og:title" content="metronomnom — Free Online Metronome" />
+    <meta
+      property="og:description"
+      content="A free online metronome with adjustable tempo, time signatures, subdivisions, and swing — plus latency calibration so every beat lands on time."
+    />
+    <meta property="og:image" content="https://metronomnom.com/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter / X large-image card. -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="metronomnom — Free Online Metronome" />
+    <meta
+      name="twitter:description"
+      content="A free online metronome with adjustable tempo, time signatures, subdivisions, and swing — plus latency calibration so every beat lands on time."
+    />
+    <meta name="twitter:image" content="https://metronomnom.com/og.png" />
+
     <!-- FlexOffers site verification. -->
     <meta name="fo-verify" content="b8a973db-26fa-44cb-b144-e36d1ef0b52d" />
+
+    <!-- Structured data: the app itself (rich-result eligibility for a free tool). -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "metronomnom",
+        "url": "https://metronomnom.com/",
+        "description": "A free online metronome with adjustable tempo, time signatures, subdivisions, and swing — plus audio-latency calibration so every beat lands on time.",
+        "applicationCategory": "MusicApplication",
+        "operatingSystem": "Any (web browser)",
+        "browserRequirements": "Requires a modern web browser with JavaScript.",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
+
+    <!-- Structured data: FAQ. MUST mirror the visible #seo-content FAQ verbatim. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Is metronomnom free?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. metronomnom is completely free, with no sign-up and no download — it runs right in your web browser."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What time signatures and subdivisions does it support?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "You can choose common time signatures such as 4/4, 3/4, and 6/8, and layer subdivisions like eighth notes, triplets, and sixteenth notes on top of the beat."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What does the swing (feel) control do?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Swing adjusts the timing between subdivisions, sliding from a straight, even feel to a relaxed, swung groove — useful for jazz, blues, and shuffle practice."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Why does my metronome sound late or off the beat?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Every device adds a little audio output latency, so clicks can drift slightly late. metronomnom measures and compensates for this, and you can fine-tune it for your headphones or speakers with the Calibrate tap-in flow."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does it work on mobile?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. metronomnom works in any modern browser on phones, tablets, and desktops — no app install required."
+            }
+          }
+        ]
+      }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Fredoka:wght@500;600;700&family=Baloo+2:wght@500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Static SEO content (#seo-content) styling. Theme-aware via the lib's CSS
+         vars (the pre-paint script below adds theme-light/theme-dark to <html>).
+         Kept out of Tailwind so it does not depend on index.html being scanned. -->
+    <style>
+      #seo-content {
+        max-width: 42rem;
+        margin: 0 auto;
+        padding: 3rem 1.25rem 4rem;
+        color: hsl(var(--foreground));
+        font-family: "Baloo 2", ui-rounded, system-ui, sans-serif;
+        line-height: 1.6;
+      }
+      #seo-content h1 {
+        font-family: "Fredoka", "Baloo 2", ui-rounded, sans-serif;
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0 0 0.75rem;
+      }
+      #seo-content h2 {
+        font-family: "Fredoka", "Baloo 2", ui-rounded, sans-serif;
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 2rem 0 0.5rem;
+      }
+      #seo-content p,
+      #seo-content li,
+      #seo-content dd {
+        color: hsl(var(--muted-foreground));
+      }
+      #seo-content ul,
+      #seo-content ol {
+        padding-left: 1.25rem;
+      }
+      #seo-content li {
+        margin: 0.25rem 0;
+      }
+      #seo-content dt {
+        font-weight: 600;
+        margin-top: 1rem;
+      }
+      #seo-content dd {
+        margin: 0.25rem 0 0;
+      }
+    </style>
+
     <!-- Apply the saved (or default 'light') theme before first paint to avoid a
          flash of the wrong palette. Mirrors src/theme.ts — keep them in sync. -->
     <script>
@@ -29,5 +170,67 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Static, crawlable content. Sibling of #root, so React never touches it.
+         #root is height:100%, so this sits below the fold and scrolls into view.
+         Holds the page's single top-level heading. The FAQ MUST stay in sync with the
+         FAQPage JSON-LD above. -->
+    <section id="seo-content">
+      <h1>metronomnom — a free online metronome</h1>
+      <p>
+        metronomnom is a free online metronome that runs right in your browser —
+        no download, no sign-up. Set any tempo in BPM, choose your time
+        signature, add subdivisions, and dial in swing or a straight feel. It
+        even compensates for your device's audio latency, so every click lands
+        on time.
+      </p>
+
+      <h2>How to use the metronome</h2>
+      <ol>
+        <li>Press the play button to start the beat.</li>
+        <li>Drag the tempo slider or tap the steppers to set your BPM.</li>
+        <li>Pick a time signature such as 4/4, 3/4, or 6/8.</li>
+        <li>Add subdivisions — eighth notes, triplets, or sixteenths — under Feel.</li>
+        <li>Adjust swing to loosen the groove, or keep it straight.</li>
+        <li>Tap Calibrate to correct any audio delay on your device.</li>
+      </ol>
+
+      <h2>Frequently asked questions</h2>
+      <dl>
+        <dt>Is metronomnom free?</dt>
+        <dd>
+          Yes. metronomnom is completely free, with no sign-up and no download —
+          it runs right in your web browser.
+        </dd>
+
+        <dt>What time signatures and subdivisions does it support?</dt>
+        <dd>
+          You can choose common time signatures such as 4/4, 3/4, and 6/8, and
+          layer subdivisions like eighth notes, triplets, and sixteenth notes on
+          top of the beat.
+        </dd>
+
+        <dt>What does the swing (feel) control do?</dt>
+        <dd>
+          Swing adjusts the timing between subdivisions, sliding from a straight,
+          even feel to a relaxed, swung groove — useful for jazz, blues, and
+          shuffle practice.
+        </dd>
+
+        <dt>Why does my metronome sound late or off the beat?</dt>
+        <dd>
+          Every device adds a little audio output latency, so clicks can drift
+          slightly late. metronomnom measures and compensates for this, and you
+          can fine-tune it for your headphones or speakers with the Calibrate
+          tap-in flow.
+        </dd>
+
+        <dt>Does it work on mobile?</dt>
+        <dd>
+          Yes. metronomnom works in any modern browser on phones, tablets, and
+          desktops — no app install required.
+        </dd>
+      </dl>
+    </section>
   </body>
 </html>

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="metronomnom — Free Online Metronome">
+  <!-- Source for public/og.png (1200x630 social share card). Standalone: brand
+       colors are hard-coded hex (no theme CSS vars), espresso/amber dark variant.
+       Mascot geometry mirrors public/favicon.svg / src/components/Mascot.tsx. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#211913"/>
+      <stop offset="1" stop-color="#16110c"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Mascot, left third. 100x100 art scaled ~3.1x and centered around (300,315). -->
+  <g transform="translate(300 315) scale(3.05) translate(-50 -52)">
+    <rect x="22" y="84" width="56" height="10" rx="5" fill="#b9802f"/>
+    <path d="M28 86 L38 31 Q39 27 43 27 L57 27 Q61 27 62 31 L72 86 Z" fill="#f5b13c"/>
+    <line x1="50" y1="80" x2="58" y2="20" stroke="#b9802f" stroke-width="3.6" stroke-linecap="round"/>
+    <rect x="55" y="44" width="10" height="9" rx="2" transform="rotate(13 60 48)" fill="#ed645a"/>
+    <circle cx="44" cy="58" r="5" fill="#fff"/>
+    <circle cx="45.2" cy="59" r="2.6" fill="#2a1f16"/>
+    <circle cx="57" cy="58" r="5" fill="#fff"/>
+    <circle cx="58.2" cy="59" r="2.6" fill="#2a1f16"/>
+    <path d="M43 69 Q50 78 57 69 Q50 73 43 69 Z" fill="#2a1f16"/>
+    <circle cx="40" cy="66" r="3" fill="#ed645a" opacity="0.4"/>
+    <circle cx="62" cy="66" r="3" fill="#ed645a" opacity="0.4"/>
+  </g>
+
+  <!-- Wordmark + tagline, right two-thirds. Fredoka/Baloo are not guaranteed at
+       render time, so fall back through rounded system stacks. -->
+  <text x="556" y="290" font-family="Fredoka, 'Baloo 2', ui-rounded, system-ui, sans-serif" font-weight="700" font-size="92" letter-spacing="-2">
+    <tspan fill="#f0e6d8">metro</tspan><tspan fill="#ed645a">nomnom</tspan>
+  </text>
+  <text x="560" y="356" font-family="'Baloo 2', ui-rounded, system-ui, sans-serif" font-weight="600" font-size="42" letter-spacing="1" fill="#cdbfae">Free Online Metronome</text>
+
+  <!-- Beat-dot motif under the tagline (echoes the in-app beat arc). -->
+  <g>
+    <rect x="562" y="400" width="44" height="15" rx="7.5" fill="#f5b13c"/>
+    <rect x="618" y="403" width="28" height="9" rx="4.5" fill="#8a7a66"/>
+    <rect x="658" y="403" width="28" height="9" rx="4.5" fill="#8a7a66"/>
+    <rect x="698" y="403" width="28" height="9" rx="4.5" fill="#8a7a66"/>
+  </g>
+
+  <text x="562" y="470" font-family="'Baloo 2', ui-rounded, system-ui, sans-serif" font-weight="500" font-size="27" fill="#9c8d7a">Tempo · Time signatures · Subdivisions · Swing</text>
+</svg>

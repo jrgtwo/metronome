@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://metronomnom.com/sitemap.xml
