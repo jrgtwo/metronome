@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   conveyorTranslate,
   pendulumAngle,
+  beatDurationMs,
   bodySway,
   bodyOffset,
   bodyBob,
@@ -55,6 +56,25 @@ describe('pendulumAngle', () => {
 
   it('is mid-swing (not at an extreme) on a subdivision', () => {
     expect(Math.abs(pendulumAngle(0, 1, 0, 2))).toBeLessThan(MAX_ANGLE - 1);
+  });
+});
+
+describe('beatDurationMs', () => {
+  // bpm is quarter-note pulses/min; a pulse is a note of value `denominator`,
+  // so a /8 pulse is half a quarter, a /2 pulse is two quarters. This is the
+  // even spacing the steady pendulum swings on — independent of subdivision/swing.
+  it('is one quarter at /4 (a real-metronome tick)', () => {
+    expect(beatDurationMs(120, 4)).toBe(500);
+  });
+
+  it('is half as long for an /8 pulse (e.g. 7/8) and twice for /2', () => {
+    expect(beatDurationMs(120, 8)).toBe(250);
+    expect(beatDurationMs(120, 2)).toBe(1000);
+    expect(beatDurationMs(120, 16)).toBe(125);
+  });
+
+  it('scales inversely with tempo', () => {
+    expect(beatDurationMs(60, 4)).toBe(1000);
   });
 });
 

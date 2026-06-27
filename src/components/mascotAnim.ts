@@ -37,6 +37,16 @@ export function pendulumAngle(
   return -MAX_ANGLE * Math.cos(Math.PI * beatPhase);
 }
 
+/**
+ * Duration of one counted pulse (the steady tick the pendulum swings on), in ms.
+ * `bpm` is quarter-note pulses/min and `denominator` is the note value of one
+ * pulse (4=quarter, 8=eighth, 2=half), so a /8 pulse is half a quarter. This is
+ * even regardless of meter, subdivision, or swing — a real metronome's tick.
+ */
+export function beatDurationMs(bpm: number, denominator: number): number {
+  return (60000 / bpm) * (4 / denominator);
+}
+
 /* ── Hula body sway ─────────────────────────────────────────────────────────
  * A second beat-synced motion: the metronome BODY bends side to side ("hula").
  * Feet stay planted, the hips swing, and the region at/above the mouth stays

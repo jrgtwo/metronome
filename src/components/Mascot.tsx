@@ -11,6 +11,7 @@ import {
   BODY_BOB,
   conveyorTranslate,
   pendulumAngle,
+  beatDurationMs,
   bodySway,
   bodyOffset,
   bodyBob,
@@ -120,6 +121,8 @@ interface MascotHeroProps {
   bpm?: number;
   isRunning?: boolean;
   beats?: number;
+  /** Note value of one pulse (4=quarter, 8=eighth …) — sets the steady tick rate. */
+  denominator?: number;
   accents?: readonly number[];
   accentEnabled?: boolean;
   subdivision?: SubdivisionId;
@@ -139,6 +142,7 @@ export function MascotHero({
   bpm = 0,
   isRunning = false,
   beats = 4,
+  denominator = 4,
   accents = [],
   accentEnabled = true,
   subdivision,
@@ -171,14 +175,19 @@ export function MascotHero({
 
   // Latest engine position (read by the rAF loop without restarting it) +
   // a monotonic beat counter (so the pendulum alternates across bar lines).
+  // Two clocks: the SUBDIVISION clock (subTickTime) drives the note conveyor —
+  // it follows meter + feel/swing; the BEAT clock (beatTickTime) drives the
+  // pendulum + body sway — a steady tick per counted pulse, re-anchored on each
+  // beat only, so it ignores subdivisions and swing (a real metronome).
   const beatPosRef = useRef(-1);
   const subPosRef = useRef(0);
   const monotonicBeatRef = useRef(0);
   const prevBeatRef = useRef(-1);
-  const tickTimeRef = useRef(0);
+  const subTickTimeRef = useRef(0);
+  const beatTickTimeRef = useRef(0);
 
   // Track ground truth: mirror the current position into refs, advance the
-  // monotonic beat on beat changes, and stamp the tick time for interpolation.
+  // monotonic beat on beat changes, and stamp each clock for interpolation.
   useEffect(() => {
     beatPosRef.current = currentBeat;
     subPosRef.current = currentSubdivisionIndex;
@@ -187,6 +196,7 @@ export function MascotHero({
       prevBeatRef.current = -1;
       return;
     }
+    const now = performance.now();
     if (currentBeat !== prevBeatRef.current) {
       if (prevBeatRef.current < 0) {
         monotonicBeatRef.current = 0; // first beat → far left
@@ -196,26 +206,28 @@ export function MascotHero({
         monotonicBeatRef.current += d;
       }
       prevBeatRef.current = currentBeat;
+      beatTickTimeRef.current = now; // beat clock advances only on a new pulse
     }
-    tickTimeRef.current = performance.now();
+    subTickTimeRef.current = now; // subdivision clock advances on every sub-tick
   }, [currentBeat, currentSubdivisionIndex, isRunning, beats]);
 
-  // Drive both from the CURRENT position each frame — no accumulation, so tempo
-  // / meter / feel changes re-anchor immediately (like BeatDots).
+  // Drive everything from the CURRENT position each frame — no accumulation, so
+  // tempo/meter/feel changes re-anchor immediately (like BeatDots). The conveyor
+  // runs on the subdivision clock (meter + feel); the pendulum + body run on the
+  // beat clock (a steady tick per pulse), so they ignore subdivisions and swing.
   useEffect(() => {
-    // `sway` is passed in (not derived from monoBeat) so rest can sit the body
-    // upright (sway 0) while the pendulum still rests at its far-left extreme.
-    const draw = (inMeasureTick: number, monoBeat: number, sub: number, frac: number, sway: number) => {
+    const draw = (inMeasureTick: number, fracSub: number, monoBeat: number, fracBeat: number, sway: number) => {
       // Staff + notes are static; the body (drawn on top) covers/reveals the staff
       // as it sways, so there's never a gap and the notes just flow smoothly.
       conveyorRef.current?.setAttribute(
         'transform',
-        `translate(${conveyorTranslate(inMeasureTick, frac, patternWidth).toFixed(3)} 0)`,
+        `translate(${conveyorTranslate(inMeasureTick, fracSub, patternWidth).toFixed(3)} 0)`,
       );
-      // Pendulum keeps ONLY its own tick — it is not carried by the body sway.
+      // Pendulum: a steady swing per beat (subsPerBeat 1, sub 0) — no subdivisions,
+      // no swing. Keeps ONLY its own tick; not carried by the body sway.
       pendulumRef.current?.setAttribute(
         'transform',
-        `rotate(${pendulumAngle(monoBeat, sub, frac, subsPerBeat).toFixed(3)} 50 80)`,
+        `rotate(${pendulumAngle(monoBeat, 0, fracBeat, 1).toFixed(3)} 50 80)`,
       );
       // Hula body sway: bend the body, keep feet + mouth ~planted, hop on each side.
       bodyRef.current?.setAttribute('d', bodyPath(sway, BODY_AMP));
@@ -228,19 +240,22 @@ export function MascotHero({
       draw(0, 0, 0, 0, 0); // rest: note 0 at the mouth, pendulum far left, body upright
       return;
     }
-    const tickMs = 60000 / bpm / subsPerBeat;
+    const beatMs = beatDurationMs(bpm, denominator);
+    const subMs = beatMs / subsPerBeat; // sub-tick spacing = pulse / subdivisions
     let raf = 0;
     const frame = (now: number) => {
-      const frac = Math.min(1, Math.max(0, (now - tickTimeRef.current) / tickMs));
+      const fracSub = Math.min(1, Math.max(0, (now - subTickTimeRef.current) / subMs));
+      const fracBeat = Math.min(1, Math.max(0, (now - beatTickTimeRef.current) / beatMs));
       const sub = Math.max(0, subPosRef.current);
       const inMeasureTick = Math.max(0, beatPosRef.current) * subsPerBeat + sub;
-      const sway = bodySway(monotonicBeatRef.current, sub, frac, subsPerBeat);
-      draw(inMeasureTick, monotonicBeatRef.current, sub, frac, sway);
+      // Steady per-beat sway (subsPerBeat 1): one even swing per counted pulse.
+      const sway = bodySway(monotonicBeatRef.current, 0, fracBeat, 1);
+      draw(inMeasureTick, fracSub, monotonicBeatRef.current, fracBeat, sway);
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
-  }, [isRunning, bpm, subsPerBeat, patternWidth]);
+  }, [isRunning, bpm, subsPerBeat, denominator, patternWidth]);
 
   return (
     <svg viewBox="0 0 138 100" className={className} aria-hidden="true">

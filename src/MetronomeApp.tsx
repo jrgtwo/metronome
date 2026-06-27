@@ -82,6 +82,7 @@ export function MetronomeApp() {
             bpm={m.bpm}
             isRunning={m.isRunning}
             beats={m.timeSignature.numerator}
+            denominator={m.timeSignature.denominator}
             accents={m.accents}
             accentEnabled={m.accentEnabled}
             subdivision={m.subdivision}
