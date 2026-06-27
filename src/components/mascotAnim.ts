@@ -47,14 +47,19 @@ export function pendulumAngle(
  */
 export const Y_FOOT = 86; // base of the body (planted)
 export const Y_TOP = 28; // top of the dome
-export const Y_MOUTH = 70; // the sway "still point" — notes land here on the beat
+export const Y_MOUTH = 70; // mouth line — the conveyor compensates by the offset here
 const SPAN = Y_FOOT - Y_TOP; // normalize height to 0 (feet) … 1 (top)
-const MOUTH_T = (Y_FOOT - Y_MOUTH) / SPAN; // ≈ 0.276
-const HEAD_RATIO = 0.4; // how much the head counter-leans vs. the hips
+const TOP_COUNTER = 0.35; // how much the top counter-leans against the mid-body bulge
+// Peak of the (un-normalized) shape, so `amp` reads as the max sway in user units.
+const SHAPE_PEAK = (() => {
+  let m = 0;
+  for (let t = 0; t <= 1; t += 0.001) m = Math.max(m, Math.sin(Math.PI * t) - TOP_COUNTER * t);
+  return m;
+})();
 
 // Sensible defaults (tuned live in the app); exported so the component shares them.
-export const BODY_AMP = 9; // hip swing amplitude (user units)
-export const BODY_BOB = 2.5; // vertical hop at each side extreme
+export const BODY_AMP = 6; // hip swing amplitude (user units)
+export const BODY_BOB = 1.5; // vertical hop at each side extreme
 export const BEATS_PER_SWAY = 2; // one full left→right→left per N beats
 
 /**
@@ -73,12 +78,12 @@ export function bodySway(
   return -Math.cos((2 * Math.PI * beatPhase) / beatsPerSway);
 }
 
-/** Normalized S-profile: 0 at the feet and at the mouth, a hip lobe below the
- *  mouth, a subtler counter-lean above it. */
+/** Whole-body sway profile (normalized so the peak is ±1): 0 at the planted feet,
+ *  bulging through the mid-body, with the top counter-leaning for life. The whole
+ *  metronome curves as one — not a low blob by the base. */
 function swayShape(t: number): number {
   const tc = Math.min(1, Math.max(0, t));
-  if (tc <= MOUTH_T) return Math.sin((Math.PI * tc) / MOUTH_T); // hips
-  return -HEAD_RATIO * Math.sin((0.5 * Math.PI * (tc - MOUTH_T)) / (1 - MOUTH_T)); // head
+  return (Math.sin(Math.PI * tc) - TOP_COUNTER * tc) / SHAPE_PEAK;
 }
 
 /** Horizontal bend (user units) of the body at height `y` for sway `s`. */

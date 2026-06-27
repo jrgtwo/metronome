@@ -9,7 +9,6 @@ import {
   SP,
   MAX_ANGLE,
   Y_FOOT,
-  Y_MOUTH,
 } from './mascotAnim';
 
 describe('conveyorTranslate', () => {
@@ -94,33 +93,35 @@ describe('bodySway', () => {
 
 describe('bodyOffset', () => {
   const AMP = 9;
-  const Y_HIP = 78; // below the mouth — in the swinging hip zone
-  const Y_HEAD = 40; // above the mouth — the counter-leaning zone
+  const Y_MID = 60; // mid-body — where the whole-body sway should bulge most
+  const Y_LOW = 80; // just above the base
+  const Y_TOPISH = 30; // near the dome — the slight counter-lean
 
   it('keeps the feet planted (zero offset at the base)', () => {
     expect(bodyOffset(Y_FOOT, 1, AMP)).toBeCloseTo(0);
   });
 
-  it('keeps the mouth still so notes still land (zero at the mouth line)', () => {
-    expect(bodyOffset(Y_MOUTH, 1, AMP)).toBeCloseTo(0);
+  it('swings the whole body — bulges at mid-body, not down by the base', () => {
+    // The "arms near the feet" look came from a low, narrow bulge; the whole-body
+    // sway must move the mid-body more than the area just above the base.
+    expect(Math.abs(bodyOffset(Y_MID, 1, AMP))).toBeGreaterThan(Math.abs(bodyOffset(Y_LOW, 1, AMP)));
   });
 
-  it('swings the hips and counter-leans the head (opposite signs)', () => {
-    expect(Math.sign(bodyOffset(Y_HIP, 1, AMP))).toBe(-Math.sign(bodyOffset(Y_HEAD, 1, AMP)));
-    expect(bodyOffset(Y_HIP, 1, AMP)).not.toBe(0);
-    expect(bodyOffset(Y_HEAD, 1, AMP)).not.toBe(0);
+  it('counter-leans the top against the body (opposite signs) for life', () => {
+    expect(Math.sign(bodyOffset(Y_TOPISH, 1, AMP))).toBe(-Math.sign(bodyOffset(Y_MID, 1, AMP)));
+    expect(bodyOffset(Y_TOPISH, 1, AMP)).not.toBe(0);
   });
 
   it('is symmetric left/right (odd in the sway value)', () => {
-    expect(bodyOffset(Y_HIP, -0.5, AMP)).toBeCloseTo(-bodyOffset(Y_HIP, 0.5, AMP));
+    expect(bodyOffset(Y_MID, -0.5, AMP)).toBeCloseTo(-bodyOffset(Y_MID, 0.5, AMP));
   });
 
   it('rests centered when not swaying (s = 0)', () => {
-    expect(bodyOffset(Y_HIP, 0, AMP)).toBe(0);
+    expect(bodyOffset(Y_MID, 0, AMP)).toBe(0);
   });
 
   it('scales linearly with amplitude', () => {
-    expect(bodyOffset(Y_HIP, 1, 2 * AMP)).toBeCloseTo(2 * bodyOffset(Y_HIP, 1, AMP));
+    expect(bodyOffset(Y_MID, 1, 2 * AMP)).toBeCloseTo(2 * bodyOffset(Y_MID, 1, AMP));
   });
 });
 

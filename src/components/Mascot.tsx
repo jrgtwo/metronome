@@ -206,6 +206,8 @@ export function MascotHero({
     // `sway` is passed in (not derived from monoBeat) so rest can sit the body
     // upright (sway 0) while the pendulum still rests at its far-left extreme.
     const draw = (inMeasureTick: number, monoBeat: number, sub: number, frac: number, sway: number) => {
+      // Staff + notes are static; the body (drawn on top) covers/reveals the staff
+      // as it sways, so there's never a gap and the notes just flow smoothly.
       conveyorRef.current?.setAttribute(
         'transform',
         `translate(${conveyorTranslate(inMeasureTick, frac, patternWidth).toFixed(3)} 0)`,
@@ -247,9 +249,12 @@ export function MascotHero({
           <rect x={CLIP_X} y="54" width={138 - CLIP_X} height="42" />
         </clipPath>
       </defs>
-      <line x1="68" y1="64" x2="130" y2="64" stroke={STAFF} strokeWidth="1.4" />
-      <line x1="68" y1="72" x2="130" y2="72" stroke={STAFF} strokeWidth="1.4" />
-      <line x1="68" y1="80" x2="130" y2="80" stroke={STAFF} strokeWidth="1.4" />
+      {/* Staff starts left of the mouth (x = CLIP_X) so it tucks behind the body;
+          the body covers/reveals it as it sways — keeping it gap-free without ever
+          moving the staff. */}
+      <line x1={CLIP_X} y1="64" x2="130" y2="64" stroke={STAFF} strokeWidth="1.4" />
+      <line x1={CLIP_X} y1="72" x2="130" y2="72" stroke={STAFF} strokeWidth="1.4" />
+      <line x1={CLIP_X} y1="80" x2="130" y2="80" stroke={STAFF} strokeWidth="1.4" />
       <g clipPath={`url(#${clipId})`}>
         <g ref={conveyorRef}>
           {Array.from({ length: copies }).flatMap((_, c) =>
