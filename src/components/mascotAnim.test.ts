@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { conveyorTranslate, pendulumAngle, SP, MAX_ANGLE } from './mascotAnim';
+import {
+  conveyorTranslate,
+  pendulumAngle,
+  bodySway,
+  bodyOffset,
+  bodyBob,
+  bodyPath,
+  SP,
+  MAX_ANGLE,
+  Y_FOOT,
+  Y_MOUTH,
+} from './mascotAnim';
 
 describe('conveyorTranslate', () => {
   const PW = 4 * SP; // 4/4 straight: 4 notes per measure
@@ -45,5 +56,114 @@ describe('pendulumAngle', () => {
 
   it('is mid-swing (not at an extreme) on a subdivision', () => {
     expect(Math.abs(pendulumAngle(0, 1, 0, 2))).toBeLessThan(MAX_ANGLE - 1);
+  });
+});
+
+describe('bodySway', () => {
+  it('is at a hip extreme on beat 0 (planted hip on the downbeat)', () => {
+    expect(bodySway(0, 0, 0, 2, 2)).toBeCloseTo(-1);
+  });
+
+  it('swings to the opposite hip extreme on the next beat', () => {
+    expect(bodySway(1, 0, 0, 2, 2)).toBeCloseTo(1);
+  });
+
+  it('passes through center halfway between beats (default 1 sway / 2 beats)', () => {
+    // beatPhase 0.5 → s = 0
+    expect(bodySway(0, 1, 0, 2, 2)).toBeCloseTo(0);
+  });
+
+  it('moves in phase with the pendulum at the default rate (2 beats/sway)', () => {
+    // s equals the pendulum’s normalized swing — hips follow the weight.
+    for (const [mb, si, fr, spb] of [
+      [0, 0, 0, 2],
+      [1, 0, 0, 2],
+      [0, 1, 0, 2],
+      [2, 0, 0, 4],
+      [1, 2, 0.3, 4],
+    ] as const) {
+      expect(bodySway(mb, si, fr, spb, 2)).toBeCloseTo(pendulumAngle(mb, si, fr, spb) / MAX_ANGLE);
+    }
+  });
+
+  it('completes a full sway every beat when beatsPerSway is 1', () => {
+    expect(bodySway(0, 0, 0, 2, 1)).toBeCloseTo(-1);
+    expect(bodySway(1, 0, 0, 2, 1)).toBeCloseTo(-1); // one whole beat later → back to the same extreme
+  });
+});
+
+describe('bodyOffset', () => {
+  const AMP = 9;
+  const Y_HIP = 78; // below the mouth — in the swinging hip zone
+  const Y_HEAD = 40; // above the mouth — the counter-leaning zone
+
+  it('keeps the feet planted (zero offset at the base)', () => {
+    expect(bodyOffset(Y_FOOT, 1, AMP)).toBeCloseTo(0);
+  });
+
+  it('keeps the mouth still so notes still land (zero at the mouth line)', () => {
+    expect(bodyOffset(Y_MOUTH, 1, AMP)).toBeCloseTo(0);
+  });
+
+  it('swings the hips and counter-leans the head (opposite signs)', () => {
+    expect(Math.sign(bodyOffset(Y_HIP, 1, AMP))).toBe(-Math.sign(bodyOffset(Y_HEAD, 1, AMP)));
+    expect(bodyOffset(Y_HIP, 1, AMP)).not.toBe(0);
+    expect(bodyOffset(Y_HEAD, 1, AMP)).not.toBe(0);
+  });
+
+  it('is symmetric left/right (odd in the sway value)', () => {
+    expect(bodyOffset(Y_HIP, -0.5, AMP)).toBeCloseTo(-bodyOffset(Y_HIP, 0.5, AMP));
+  });
+
+  it('rests centered when not swaying (s = 0)', () => {
+    expect(bodyOffset(Y_HIP, 0, AMP)).toBe(0);
+  });
+
+  it('scales linearly with amplitude', () => {
+    expect(bodyOffset(Y_HIP, 1, 2 * AMP)).toBeCloseTo(2 * bodyOffset(Y_HIP, 1, AMP));
+  });
+});
+
+describe('bodyBob', () => {
+  it('only ever hops up, never down (≤ 0)', () => {
+    expect(bodyBob(0.7, 2.5)).toBeLessThanOrEqual(0);
+    expect(bodyBob(-0.7, 2.5)).toBeLessThanOrEqual(0);
+  });
+
+  it('does not bob while centered', () => {
+    expect(bodyBob(0, 2.5)).toBe(0);
+  });
+
+  it('hops highest at the side extremes', () => {
+    expect(Math.abs(bodyBob(1, 2.5))).toBeCloseTo(2.5);
+    expect(Math.abs(bodyBob(1, 2.5))).toBeGreaterThan(Math.abs(bodyBob(0.4, 2.5)));
+  });
+});
+
+describe('bodyPath', () => {
+  const pairs = (d: string): Array<[number, number]> => {
+    const nums = (d.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
+    const out: Array<[number, number]> = [];
+    for (let i = 0; i + 1 < nums.length; i += 2) out.push([nums[i], nums[i + 1]]);
+    return out;
+  };
+
+  it('is left/right symmetric at rest (mean x = 50, feet at 30 and 70)', () => {
+    const p = pairs(bodyPath(0, 9));
+    expect(p[0]).toEqual([30, Y_FOOT]); // path starts at the left foot
+    expect(p.some(([x, y]) => Math.abs(x - 70) < 0.01 && y === Y_FOOT)).toBe(true);
+    const meanX = p.reduce((a, [x]) => a + x, 0) / p.length;
+    expect(meanX).toBeCloseTo(50, 1);
+  });
+
+  it('keeps the feet planted while swaying', () => {
+    const feet = pairs(bodyPath(1, 9)).filter(([, y]) => y === Y_FOOT);
+    const xs = feet.map(([x]) => x).sort((a, b) => a - b);
+    expect(xs[0]).toBeCloseTo(30);
+    expect(xs[xs.length - 1]).toBeCloseTo(70);
+  });
+
+  it('bends the body when swaying', () => {
+    expect(bodyPath(1, 9)).not.toBe(bodyPath(0, 9));
   });
 });

@@ -2,7 +2,20 @@ import { useEffect, useId, useMemo, useRef } from 'react';
 import type { Ref } from 'react';
 import { subdivisionCount } from '@fretwork/lib';
 import type { SubdivisionId } from '@fretwork/lib';
-import { SP, X_MOUTH, conveyorTranslate, pendulumAngle } from './mascotAnim';
+import {
+  SP,
+  X_MOUTH,
+  Y_FOOT,
+  Y_MOUTH,
+  BODY_AMP,
+  BODY_BOB,
+  conveyorTranslate,
+  pendulumAngle,
+  bodySway,
+  bodyOffset,
+  bodyBob,
+  bodyPath,
+} from './mascotAnim';
 
 /**
  * The "nom" mascot — a wind-up metronome eating notes off a staff.
@@ -54,20 +67,34 @@ function Pendulum({ pendulumRef }: { pendulumRef?: Ref<SVGGElement> }) {
   );
 }
 
+/** The authored upright-body silhouette (used by the static header mark). */
+const REST_BODY_D = 'M30 86 L39 33 Q40 28 45 28 L55 28 Q60 28 61 33 L70 86 Z';
+
+interface MetronomeRefs {
+  pendulumRef?: Ref<SVGGElement>;
+  /** Hero only: parent drives the body bend, face/base offset (the "hula" sway).
+   *  When unset (the header mark) the body is the static authored path. */
+  bodyRef?: Ref<SVGPathElement>;
+  faceRef?: Ref<SVGGElement>;
+  baseRef?: Ref<SVGRectElement>;
+}
+
 /** The classic upright metronome, centered in a 100×100 box. */
-function Metronome({ pendulumRef }: { pendulumRef?: Ref<SVGGElement> }) {
+function Metronome({ pendulumRef, bodyRef, faceRef, baseRef }: MetronomeRefs) {
   return (
     <>
-      <rect x="24" y="84" width="52" height="9" rx="4.5" fill={BODY_D} />
-      <path d="M30 86 L39 33 Q40 28 45 28 L55 28 Q60 28 61 33 L70 86 Z" fill={BODY} />
+      <rect ref={baseRef} x="24" y="84" width="52" height="9" rx="4.5" fill={BODY_D} />
+      <path ref={bodyRef} d={bodyRef ? bodyPath(0, BODY_AMP) : REST_BODY_D} fill={BODY} />
       <Pendulum pendulumRef={pendulumRef} />
-      <circle cx="44" cy="58" r="5" fill="#fff" />
-      <circle cx="45.2" cy="59" r="2.5" fill={DARK} />
-      <circle cx="56" cy="58" r="5" fill="#fff" />
-      <circle cx="57.2" cy="59" r="2.5" fill={DARK} />
-      <path d="M42 69 Q50 80 58 69 Q50 74 42 69 Z" fill={DARK} />
-      <circle cx="40" cy="66" r="3" fill={BEAT} opacity="0.4" />
-      <circle cx="60" cy="66" r="3" fill={BEAT} opacity="0.4" />
+      <g ref={faceRef}>
+        <circle cx="44" cy="58" r="5" fill="#fff" />
+        <circle cx="45.2" cy="59" r="2.5" fill={DARK} />
+        <circle cx="56" cy="58" r="5" fill="#fff" />
+        <circle cx="57.2" cy="59" r="2.5" fill={DARK} />
+        <path d="M42 69 Q50 80 58 69 Q50 74 42 69 Z" fill={DARK} />
+        <circle cx="40" cy="66" r="3" fill={BEAT} opacity="0.4" />
+        <circle cx="60" cy="66" r="3" fill={BEAT} opacity="0.4" />
+      </g>
     </>
   );
 }
@@ -136,6 +163,10 @@ export function MascotHero({
 
   const conveyorRef = useRef<SVGGElement>(null);
   const pendulumRef = useRef<SVGGElement>(null);
+  const bodyRef = useRef<SVGPathElement>(null);
+  const faceRef = useRef<SVGGElement>(null);
+  const baseRef = useRef<SVGRectElement>(null);
+  const rootRef = useRef<SVGGElement>(null);
   const clipId = useId();
 
   // Latest engine position (read by the rAF loop without restarting it) +
@@ -172,19 +203,27 @@ export function MascotHero({
   // Drive both from the CURRENT position each frame — no accumulation, so tempo
   // / meter / feel changes re-anchor immediately (like BeatDots).
   useEffect(() => {
-    const draw = (inMeasureTick: number, monoBeat: number, sub: number, frac: number) => {
+    // `sway` is passed in (not derived from monoBeat) so rest can sit the body
+    // upright (sway 0) while the pendulum still rests at its far-left extreme.
+    const draw = (inMeasureTick: number, monoBeat: number, sub: number, frac: number, sway: number) => {
       conveyorRef.current?.setAttribute(
         'transform',
         `translate(${conveyorTranslate(inMeasureTick, frac, patternWidth).toFixed(3)} 0)`,
       );
+      // Pendulum keeps ONLY its own tick — it is not carried by the body sway.
       pendulumRef.current?.setAttribute(
         'transform',
         `rotate(${pendulumAngle(monoBeat, sub, frac, subsPerBeat).toFixed(3)} 50 80)`,
       );
+      // Hula body sway: bend the body, keep feet + mouth ~planted, hop on each side.
+      bodyRef.current?.setAttribute('d', bodyPath(sway, BODY_AMP));
+      faceRef.current?.setAttribute('transform', `translate(${bodyOffset(Y_MOUTH, sway, BODY_AMP).toFixed(3)} 0)`);
+      baseRef.current?.setAttribute('transform', `translate(${bodyOffset(Y_FOOT, sway, BODY_AMP).toFixed(3)} 0)`);
+      rootRef.current?.setAttribute('transform', `translate(0 ${bodyBob(sway, BODY_BOB).toFixed(3)})`);
     };
 
     if (!isRunning || bpm <= 0 || prefersReducedMotion()) {
-      draw(0, 0, 0, 0); // rest: note 0 at the mouth, pendulum far left
+      draw(0, 0, 0, 0, 0); // rest: note 0 at the mouth, pendulum far left, body upright
       return;
     }
     const tickMs = 60000 / bpm / subsPerBeat;
@@ -193,7 +232,8 @@ export function MascotHero({
       const frac = Math.min(1, Math.max(0, (now - tickTimeRef.current) / tickMs));
       const sub = Math.max(0, subPosRef.current);
       const inMeasureTick = Math.max(0, beatPosRef.current) * subsPerBeat + sub;
-      draw(inMeasureTick, monotonicBeatRef.current, sub, frac);
+      const sway = bodySway(monotonicBeatRef.current, sub, frac, subsPerBeat);
+      draw(inMeasureTick, monotonicBeatRef.current, sub, frac, sway);
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
@@ -229,7 +269,9 @@ export function MascotHero({
           )}
         </g>
       </g>
-      <Metronome pendulumRef={pendulumRef} />
+      <g ref={rootRef}>
+        <Metronome pendulumRef={pendulumRef} bodyRef={bodyRef} faceRef={faceRef} baseRef={baseRef} />
+      </g>
     </svg>
   );
 }
