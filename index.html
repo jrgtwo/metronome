@@ -64,7 +64,8 @@
       }
     </script>
 
-    <!-- Structured data: FAQ. MUST mirror the visible #seo-content FAQ verbatim. -->
+    <!-- Structured data: FAQ. MUST mirror the #about-content FAQ verbatim (shown
+         to users via the About modal). -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -118,48 +119,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Fredoka:wght@500;600;700&family=Baloo+2:wght@500;600;700&display=swap" rel="stylesheet" />
 
-    <!-- Static SEO content (#seo-content) styling. Theme-aware via the lib's CSS
-         vars (the pre-paint script below adds theme-light/theme-dark to <html>).
-         Kept out of Tailwind so it does not depend on index.html being scanned. -->
+    <!-- The crawlable About/FAQ copy lives in #about-content (in <body>) but is
+         hidden here — the app reads it on mount and surfaces it in a modal (see
+         AboutModal.tsx). It's real, user-reachable content, just not a page slab. -->
     <style>
-      #seo-content {
-        max-width: 42rem;
-        margin: 0 auto;
-        padding: 3rem 1.25rem 4rem;
-        color: hsl(var(--foreground));
-        font-family: "Baloo 2", ui-rounded, system-ui, sans-serif;
-        line-height: 1.6;
-      }
-      #seo-content h1 {
-        font-family: "Fredoka", "Baloo 2", ui-rounded, sans-serif;
-        font-size: 1.75rem;
-        font-weight: 700;
-        margin: 0 0 0.75rem;
-      }
-      #seo-content h2 {
-        font-family: "Fredoka", "Baloo 2", ui-rounded, sans-serif;
-        font-size: 1.25rem;
-        font-weight: 600;
-        margin: 2rem 0 0.5rem;
-      }
-      #seo-content p,
-      #seo-content li,
-      #seo-content dd {
-        color: hsl(var(--muted-foreground));
-      }
-      #seo-content ul,
-      #seo-content ol {
-        padding-left: 1.25rem;
-      }
-      #seo-content li {
-        margin: 0.25rem 0;
-      }
-      #seo-content dt {
-        font-weight: 600;
-        margin-top: 1rem;
-      }
-      #seo-content dd {
-        margin: 0.25rem 0 0;
+      #about-content {
+        display: none;
       }
     </style>
 
@@ -181,12 +146,12 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Static, crawlable content. Sibling of #root, so React never touches it.
-         #root is height:100%, so this sits below the fold and scrolls into view.
-         Holds the page's single top-level heading. The FAQ MUST stay in sync with the
-         FAQPage JSON-LD above. -->
-    <section id="seo-content">
-      <h1>metronomnom — a free online metronome</h1>
+    <!-- Crawlable About/FAQ copy. Hidden via CSS (#about-content { display:none });
+         AboutModal.tsx reads this on mount and shows it in a modal, so it's real,
+         user-reachable content. Single source of truth — the FAQ MUST stay in sync
+         with the FAQPage JSON-LD above. The page's <h1> is the wordmark (Wordmark.tsx),
+         so headings here start at <h2>. -->
+    <section id="about-content">
       <p>
         metronomnom is a free online metronome that runs right in your browser —
         no download, no sign-up. Set any tempo in BPM, choose your time

@@ -12,6 +12,7 @@ import {
   conveyorTranslate,
   pendulumAngle,
   beatDurationMs,
+  noteFlags,
   bodySway,
   bodyOffset,
   bodyBob,
@@ -45,14 +46,40 @@ interface NoteProps {
   s?: number;
   color?: string;
   opacity?: number;
+  /** Beamed flags on the stem: 0 = quarter, 1 = eighth, 2 = sixteenth, … */
+  flags?: number;
+  /** Hollow notehead for half-or-longer values. */
+  hollow?: boolean;
 }
 
-/** A small eighth-note (notehead + stem). */
-function Note({ x, y, s = 1, color = BEAT, opacity = 1 }: NoteProps) {
+/** A note drawn to match its rhythmic value: solid/hollow head + stem + flags. */
+function Note({ x, y, s = 1, color = BEAT, opacity = 1, flags = 1, hollow = false }: NoteProps) {
+  const stemX = x + 3.7 * s; // left edge of the stem
+  const stemTop = y - 15 * s;
+  const fx = stemX + 2 * s; // flags hang off the stem's right edge
   return (
     <g opacity={opacity}>
-      <ellipse cx={x} cy={y} rx={5.4 * s} ry={4.3 * s} transform={`rotate(-18 ${x} ${y})`} fill={color} />
-      <rect x={x + 3.7 * s} y={y - 15 * s} width={2 * s} height={13 * s} rx={1} fill={color} />
+      <ellipse
+        cx={x}
+        cy={y}
+        rx={5.4 * s}
+        ry={4.3 * s}
+        transform={`rotate(-18 ${x} ${y})`}
+        fill={hollow ? 'none' : color}
+        stroke={hollow ? color : 'none'}
+        strokeWidth={hollow ? 1.8 * s : 0}
+      />
+      <rect x={stemX} y={stemTop} width={2 * s} height={13 * s} rx={1} fill={color} />
+      {Array.from({ length: flags }).map((_, i) => {
+        const fy = stemTop + i * 4.4 * s;
+        return (
+          <path
+            key={i}
+            d={`M ${fx} ${fy} Q ${fx + 6.5 * s} ${fy + 1.5 * s} ${fx + 5 * s} ${fy + 7 * s} Q ${fx + 3.6 * s} ${fy + 3.4 * s} ${fx} ${fy + 3 * s} Z`}
+            fill={color}
+          />
+        );
+      })}
     </g>
   );
 }
@@ -126,9 +153,8 @@ interface MascotHeroProps {
   accents?: readonly number[];
   accentEnabled?: boolean;
   subdivision?: SubdivisionId;
-  /** Engine beat clock — drives phase-lock with BeatDots. */
+  /** Engine beat clock — the steady pulse the pendulum/body/conveyor anchor to. */
   currentBeat?: number;
-  currentSubdivisionIndex?: number;
   className?: string;
 }
 
@@ -147,11 +173,12 @@ export function MascotHero({
   accentEnabled = true,
   subdivision,
   currentBeat = -1,
-  currentSubdivisionIndex = 0,
   className,
 }: MascotHeroProps) {
   const subsPerBeat = subdivision ? subdivisionCount(subdivision) : 1;
   const accentKey = accents.join(',');
+  // Every stream note shares the current rhythmic value (flags follow the feel).
+  const flags = noteFlags(subdivision);
 
   // One measure of notes (mirrors BeatDots), repeated enough to fill + loop.
   const { items, patternWidth, copies } = useMemo(() => {
@@ -173,30 +200,26 @@ export function MascotHero({
   const rootRef = useRef<SVGGElement>(null);
   const clipId = useId();
 
-  // Latest engine position (read by the rAF loop without restarting it) +
-  // a monotonic beat counter (so the pendulum alternates across bar lines).
-  // Two clocks: the SUBDIVISION clock (subTickTime) drives the note conveyor —
-  // it follows meter + feel/swing; the BEAT clock (beatTickTime) drives the
-  // pendulum + body sway — a steady tick per counted pulse, re-anchored on each
-  // beat only, so it ignores subdivisions and swing (a real metronome).
+  // Latest engine position (read by the rAF loop without restarting it) + a
+  // monotonic beat counter (so the pendulum alternates across bar lines). A
+  // single BEAT clock (beatTickTime) re-anchored on each counted pulse drives
+  // everything — pendulum, body sway, AND the note conveyor — interpolating
+  // evenly over the pulse. So the conveyor flows smoothly and ignores swing
+  // (the off-beats no longer yank it), exactly like a real metronome.
   const beatPosRef = useRef(-1);
-  const subPosRef = useRef(0);
   const monotonicBeatRef = useRef(0);
   const prevBeatRef = useRef(-1);
-  const subTickTimeRef = useRef(0);
   const beatTickTimeRef = useRef(0);
 
-  // Track ground truth: mirror the current position into refs, advance the
-  // monotonic beat on beat changes, and stamp each clock for interpolation.
+  // Track ground truth: mirror the current beat into a ref, advance the monotonic
+  // beat on beat changes, and stamp the beat clock for interpolation.
   useEffect(() => {
     beatPosRef.current = currentBeat;
-    subPosRef.current = currentSubdivisionIndex;
     if (!isRunning || currentBeat < 0) {
       monotonicBeatRef.current = 0;
       prevBeatRef.current = -1;
       return;
     }
-    const now = performance.now();
     if (currentBeat !== prevBeatRef.current) {
       if (prevBeatRef.current < 0) {
         monotonicBeatRef.current = 0; // first beat → far left
@@ -206,10 +229,9 @@ export function MascotHero({
         monotonicBeatRef.current += d;
       }
       prevBeatRef.current = currentBeat;
-      beatTickTimeRef.current = now; // beat clock advances only on a new pulse
+      beatTickTimeRef.current = performance.now();
     }
-    subTickTimeRef.current = now; // subdivision clock advances on every sub-tick
-  }, [currentBeat, currentSubdivisionIndex, isRunning, beats]);
+  }, [currentBeat, isRunning, beats]);
 
   // Drive everything from the CURRENT position each frame — no accumulation, so
   // tempo/meter/feel changes re-anchor immediately (like BeatDots). The conveyor
@@ -241,16 +263,15 @@ export function MascotHero({
       return;
     }
     const beatMs = beatDurationMs(bpm, denominator);
-    const subMs = beatMs / subsPerBeat; // sub-tick spacing = pulse / subdivisions
     let raf = 0;
     const frame = (now: number) => {
-      const fracSub = Math.min(1, Math.max(0, (now - subTickTimeRef.current) / subMs));
       const fracBeat = Math.min(1, Math.max(0, (now - beatTickTimeRef.current) / beatMs));
-      const sub = Math.max(0, subPosRef.current);
-      const inMeasureTick = Math.max(0, beatPosRef.current) * subsPerBeat + sub;
+      // Conveyor: glide evenly through the beat's subdivisions off the beat clock
+      // (this beat's main note at the mouth at fracBeat 0, the next at fracBeat 1).
+      const beatTick = Math.max(0, beatPosRef.current) * subsPerBeat;
       // Steady per-beat sway (subsPerBeat 1): one even swing per counted pulse.
       const sway = bodySway(monotonicBeatRef.current, 0, fracBeat, 1);
-      draw(inMeasureTick, fracSub, monotonicBeatRef.current, fracBeat, sway);
+      draw(beatTick, fracBeat * subsPerBeat, monotonicBeatRef.current, fracBeat, sway);
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
@@ -283,6 +304,7 @@ export function MascotHero({
                   s={st.s}
                   color={st.color}
                   opacity={st.opacity}
+                  flags={flags}
                 />
               );
             }),

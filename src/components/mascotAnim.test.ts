@@ -3,6 +3,7 @@ import {
   conveyorTranslate,
   pendulumAngle,
   beatDurationMs,
+  noteFlags,
   bodySway,
   bodyOffset,
   bodyBob,
@@ -75,6 +76,26 @@ describe('beatDurationMs', () => {
 
   it('scales inversely with tempo', () => {
     expect(beatDurationMs(60, 4)).toBe(1000);
+  });
+});
+
+describe('noteFlags', () => {
+  // Note value follows the feel, not the meter's denominator (BPM is a quarter
+  // pulse): off = quarter (0 flags), 8ths/triplets = eighth (1), 16ths/sextuplets
+  // = sixteenth (2). So 7/8 straight still shows quarter-note beats, not eighths.
+  it('draws quarter-note beats when straight (off)', () => {
+    expect(noteFlags('off')).toBe(0);
+    expect(noteFlags(undefined)).toBe(0); // missing subdivision == straight
+  });
+
+  it('draws eighth notes for 8ths and (eighth-)triplets', () => {
+    expect(noteFlags('8ths')).toBe(1);
+    expect(noteFlags('triplets')).toBe(1);
+  });
+
+  it('draws sixteenth notes for 16ths and sextuplets', () => {
+    expect(noteFlags('16ths')).toBe(2);
+    expect(noteFlags('sextuplets')).toBe(2);
   });
 });
 

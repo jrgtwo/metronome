@@ -12,12 +12,14 @@
   },
   "dependencies": {
     "@fretwork/lib": "github:jrgtwo/fretwork-lib#v0.1.0",
+    "@radix-ui/react-dialog": "^1.1.17",
     "@vercel/analytics": "^2.0.1",
     "adkit": "github:jrgtwo/adkit#v0.1.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.475.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

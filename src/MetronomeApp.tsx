@@ -12,6 +12,7 @@ import { BpmControl, TempoReadout } from './components/BpmControl';
 import { TimeSignaturePicker } from './components/TimeSignaturePicker';
 import { FeelControl } from './components/FeelControl';
 import { VolumeControl } from './components/VolumeControl';
+import { AboutModal } from './components/AboutModal';
 import { CalibrationSheet } from './calibration/CalibrationSheet';
 
 /**
@@ -24,6 +25,7 @@ export function MetronomeApp() {
   const m = useMetronome();
   const { theme, toggle } = useTheme();
   const [calOpen, setCalOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [heroExpanded, setHeroExpanded] = useState(false);
 
   return (
@@ -87,7 +89,6 @@ export function MetronomeApp() {
             accentEnabled={m.accentEnabled}
             subdivision={m.subdivision}
             currentBeat={m.currentBeat}
-            currentSubdivisionIndex={m.currentSubdivisionIndex}
             className={`pointer-events-none w-auto transition-[height] duration-300 ease-out ${
               heroExpanded ? 'h-44' : 'h-20'
             }`}
@@ -118,8 +119,18 @@ export function MetronomeApp() {
         {/* First adkit consumer: a footer house-ad. Hidden once a future
             'removeAds' entitlement is granted (no purchase exists yet). */}
         <AdSlot slot="footer" hideWhenEntitled="removeAds" className="mt-2 w-full max-w-sm text-muted-foreground" />
+
+        {/* Surfaces the crawlable #about-content (index.html) as a modal. */}
+        <button
+          type="button"
+          onClick={() => setAboutOpen(true)}
+          className="text-xs text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+        >
+          About metronomnom
+        </button>
       </footer>
 
+      <AboutModal open={aboutOpen} onOpenChange={setAboutOpen} />
       <CalibrationSheet open={calOpen} onClose={() => setCalOpen(false)} />
     </div>
   );

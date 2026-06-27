@@ -5,6 +5,8 @@
  * history — so the animation stays anchored across tempo / meter / feel changes
  * (the previous accumulator-based version drifted when those changed).
  */
+import type { SubdivisionId } from '@fretwork/lib';
+
 export const SP = 15; // horizontal spacing between notes (user units)
 export const X_MOUTH = 67; // a note sits here (entering the metronome) on its tick
 export const MAX_ANGLE = 16; // pendulum swing amplitude (degrees)
@@ -45,6 +47,22 @@ export function pendulumAngle(
  */
 export function beatDurationMs(bpm: number, denominator: number): number {
   return (60000 / bpm) * (4 / denominator);
+}
+
+// Stem flags per feel: the beat is a quarter (0 flags); 8ths and (eighth-)triplets
+// are eighths (1 flag); 16ths and sextuplets are sixteenths (2 flags). The note
+// value follows the feel — BPM is a quarter pulse — not the meter's denominator.
+const FLAGS_BY_SUBDIVISION: Record<SubdivisionId, number> = {
+  off: 0,
+  '8ths': 1,
+  triplets: 1,
+  '16ths': 2,
+  sextuplets: 2,
+};
+
+/** Number of stem flags to draw a conveyor note at its rhythmic value. */
+export function noteFlags(subdivision: SubdivisionId | undefined): number {
+  return FLAGS_BY_SUBDIVISION[subdivision ?? 'off'];
 }
 
 /* ── Hula body sway ─────────────────────────────────────────────────────────

@@ -7,11 +7,15 @@ import { MascotMark } from './Mascot';
  */
 export function Wordmark() {
   return (
-    <span className="flex items-center gap-2">
+    // The page's single <h1>. Visually it's just the logo + wordmark; the sr-only
+    // suffix gives crawlers and screen readers a descriptive heading without a
+    // marketing slab on the page. (Tailwind's preflight resets h1 margin/size.)
+    <h1 className="flex items-center gap-2">
       <MascotMark className="h-7 w-7 shrink-0" />
       <span className="font-display text-xl font-bold tracking-tight text-foreground">
         metro<span className="text-degree-third">nomnom</span>
       </span>
-    </span>
+      <span className="sr-only"> — Free Online Metronome</span>
+    </h1>
   );
 }
