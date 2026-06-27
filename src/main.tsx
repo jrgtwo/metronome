@@ -5,6 +5,7 @@ import './audio-context-init';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { Analytics } from '@vercel/analytics/react';
 import { AdsProvider, entitlementStore } from 'adkit';
 import { MetronomeApp } from './MetronomeApp';
 import { adsConfig } from './ads.config';
@@ -26,6 +27,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AdsProvider config={adsConfig}>
       <MetronomeApp />
+      <Analytics />
     </AdsProvider>
   </StrictMode>,
 );
