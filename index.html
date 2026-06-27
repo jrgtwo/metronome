@@ -117,7 +117,23 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Fredoka:wght@500;600;700&family=Baloo+2:wght@500;600;700&display=swap" rel="stylesheet" />
+    <!-- Load fonts WITHOUT blocking first paint: fetch as a non-applying ("print")
+         stylesheet, then flip to "all" once loaded. `display=swap` means text shows
+         in the system fallback immediately and swaps when the web fonts arrive.
+         The <noscript> keeps it working with JS disabled. (Was render-blocking
+         ~800ms per Lighthouse.) -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Fredoka:wght@500;600;700&family=Baloo+2:wght@500;600;700&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Fredoka:wght@500;600;700&family=Baloo+2:wght@500;600;700&display=swap"
+      />
+    </noscript>
 
     <!-- The crawlable About/FAQ copy lives in #about-content (in <body>) but is
          hidden here — the app reads it on mount and surfaces it in a modal (see
@@ -143,7 +159,50 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Paint-shell: a static skeleton of the above-the-fold layout so the page
+         paints instantly (FCP/LCP) instead of waiting for the JS bundle — this is
+         a client-rendered SPA, so #root is otherwise empty until React runs. React
+         (createRoot) clears these children on mount and renders the real app. Keep
+         this roughly in sync with MetronomeApp's layout so the swap doesn't shift
+         (CLS). Uses system-fallback fonts so it never waits on web fonts. -->
+    <div id="root">
+      <div class="mx-auto flex min-h-full max-w-lg flex-col px-5 py-4" aria-hidden="true">
+        <!-- header -->
+        <div class="flex items-center justify-between">
+          <span class="flex items-center gap-2">
+            <span class="h-7 w-7 shrink-0 rounded-full bg-card"></span>
+            <span class="font-display text-xl font-bold tracking-tight text-foreground">metro<span class="text-degree-third">nomnom</span></span>
+          </span>
+          <span class="flex items-center gap-2">
+            <span class="h-8 w-8 rounded-full bg-card"></span>
+            <span class="h-8 w-24 rounded-full bg-card"></span>
+          </span>
+        </div>
+        <!-- main -->
+        <div class="flex flex-1 flex-col items-center justify-center gap-4 py-2">
+          <div class="h-9"></div>
+          <div class="flex flex-col items-center">
+            <span class="font-mono text-7xl font-semibold leading-none tracking-tight text-pearl">120</span>
+            <span class="mt-1 font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">BPM</span>
+          </div>
+          <div class="-mt-1 h-20 w-36 rounded-2xl bg-card"></div>
+          <div class="flex w-full max-w-xs items-center gap-3">
+            <span class="h-10 w-10 rounded-full bg-card"></span>
+            <span class="h-2 flex-1 rounded-full bg-card"></span>
+            <span class="h-10 w-10 rounded-full bg-card"></span>
+          </div>
+          <div class="h-20 w-20 rounded-full bg-degree-third"></div>
+        </div>
+        <!-- footer -->
+        <div class="flex flex-col items-center gap-4 pt-2">
+          <div class="h-9 w-full max-w-md rounded-full bg-card"></div>
+          <div class="h-9 w-full max-w-md rounded-full bg-card"></div>
+          <div class="h-2 w-full max-w-xs rounded-full bg-card"></div>
+          <div class="h-9 w-full max-w-xs rounded-full bg-card"></div>
+          <div class="mt-2 h-16 w-full max-w-sm rounded-xl bg-card"></div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
 
     <!-- Crawlable About/FAQ copy. Hidden via CSS (#about-content { display:none });

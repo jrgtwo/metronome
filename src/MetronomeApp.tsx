@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 import { AdSlot } from 'adkit';
 import { useMetronome } from '@fretwork/lib';
@@ -12,8 +12,13 @@ import { BpmControl, TempoReadout } from './components/BpmControl';
 import { TimeSignaturePicker } from './components/TimeSignaturePicker';
 import { FeelControl } from './components/FeelControl';
 import { VolumeControl } from './components/VolumeControl';
-import { AboutModal } from './components/AboutModal';
-import { CalibrationSheet } from './calibration/CalibrationSheet';
+
+// Lazy-loaded: only fetched when first opened, so neither the radix/shadcn Dialog
+// (AboutModal) nor the calibration UI sits in the initial bundle.
+const AboutModal = lazy(() => import('./components/AboutModal').then((m) => ({ default: m.AboutModal })));
+const CalibrationSheet = lazy(() =>
+  import('./calibration/CalibrationSheet').then((m) => ({ default: m.CalibrationSheet })),
+);
 
 /**
  * The whole metronome — one screen. All timing/state comes from the lib's
@@ -130,8 +135,17 @@ export function MetronomeApp() {
         </button>
       </footer>
 
-      <AboutModal open={aboutOpen} onOpenChange={setAboutOpen} />
-      <CalibrationSheet open={calOpen} onClose={() => setCalOpen(false)} />
+      {/* Gated so the chunk loads on first open, not at startup. */}
+      {aboutOpen && (
+        <Suspense fallback={null}>
+          <AboutModal open={aboutOpen} onOpenChange={setAboutOpen} />
+        </Suspense>
+      )}
+      {calOpen && (
+        <Suspense fallback={null}>
+          <CalibrationSheet open={calOpen} onClose={() => setCalOpen(false)} />
+        </Suspense>
+      )}
     </div>
   );
 }
