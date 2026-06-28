@@ -9,7 +9,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "snapshot": "node scripts/gen-skeleton.mjs",
+    "snapshot": "playwright-core install chromium --only-shell --no-progress && node scripts/gen-skeleton.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "prepare": "husky"
