@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { MascotMark } from './Mascot';
 
 /**
@@ -5,7 +6,7 @@ import { MascotMark } from './Mascot';
  * half ("nomnom") in the brand accent. Colors come from theme tokens, so it
  * adapts to both the light and dark fun themes without branching.
  */
-export function Wordmark() {
+export const Wordmark = memo(function Wordmark() {
   return (
     // The page's single <h1>. Visually it's just the logo + wordmark; the sr-only
     // suffix gives crawlers and screen readers a descriptive heading without a
@@ -18,4 +19,4 @@ export function Wordmark() {
       <span className="sr-only"> — Free Online Metronome</span>
     </h1>
   );
-}
+});

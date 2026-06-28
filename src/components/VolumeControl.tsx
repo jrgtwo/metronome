@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { memo, type CSSProperties } from 'react';
 import clsx from 'clsx';
 import { Volume2, VolumeX } from 'lucide-react';
 
@@ -11,7 +11,12 @@ interface VolumeControlProps {
 
 /** Click volume slider + mute toggle. Mute silences the click without stopping
  *  the transport (beats keep flashing). */
-export function VolumeControl({ volume, muted, onVolume, onToggleMute }: VolumeControlProps) {
+export const VolumeControl = memo(function VolumeControl({
+  volume,
+  muted,
+  onVolume,
+  onToggleMute,
+}: VolumeControlProps) {
   return (
     <div className="flex items-center gap-3">
       <button
@@ -39,4 +44,4 @@ export function VolumeControl({ volume, muted, onVolume, onToggleMute }: VolumeC
       />
     </div>
   );
-}
+});

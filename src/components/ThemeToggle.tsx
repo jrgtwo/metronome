@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import type { Theme } from '../theme';
 
@@ -8,7 +9,7 @@ interface ThemeToggleProps {
 
 /** Switches between the light (Retro) and dark (Warm Dark Playful) fun themes.
  *  Shows the active theme's icon; the label names the one it switches to. */
-export function ThemeToggle({ theme, onToggle }: ThemeToggleProps) {
+export const ThemeToggle = memo(function ThemeToggle({ theme, onToggle }: ThemeToggleProps) {
   const isLight = theme === 'light';
   return (
     <button
@@ -20,4 +21,4 @@ export function ThemeToggle({ theme, onToggle }: ThemeToggleProps) {
       {isLight ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>
   );
-}
+});

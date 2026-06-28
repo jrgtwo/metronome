@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { memo, type CSSProperties } from 'react';
 import { Minus, Plus } from 'lucide-react';
 
 const BPM_MIN = 40;
@@ -10,7 +10,13 @@ const stepperClass =
 
 /** The hero tempo readout — sits at the center of the beat arc. `compact`
  *  shrinks it when the metronome mascot is enlarged. */
-export function TempoReadout({ bpm, compact = false }: { bpm: number; compact?: boolean }) {
+export const TempoReadout = memo(function TempoReadout({
+  bpm,
+  compact = false,
+}: {
+  bpm: number;
+  compact?: boolean;
+}) {
   return (
     <div className="flex flex-col items-center">
       <span
@@ -25,7 +31,7 @@ export function TempoReadout({ bpm, compact = false }: { bpm: number; compact?: 
       </span>
     </div>
   );
-}
+});
 
 interface BpmControlProps {
   bpm: number;
@@ -34,7 +40,7 @@ interface BpmControlProps {
 
 /** Tempo controls below the arc: fine steppers flanking the coarse slider. The
  *  store clamps to 40–240, so raw values are safe to pass through. */
-export function BpmControl({ bpm, onChange }: BpmControlProps) {
+export const BpmControl = memo(function BpmControl({ bpm, onChange }: BpmControlProps) {
   const step = (delta: number) => onChange(bpm + delta);
   const fill = ((bpm - BPM_MIN) / (BPM_MAX - BPM_MIN)) * 100;
 
@@ -60,4 +66,4 @@ export function BpmControl({ bpm, onChange }: BpmControlProps) {
       </button>
     </div>
   );
-}
+});

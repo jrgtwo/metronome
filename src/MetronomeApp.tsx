@@ -1,6 +1,6 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, memo, Suspense, useCallback, useState } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
-import { AdSlot } from 'adkit';
+import { AdSlot as AdSlotBase } from 'adkit';
 import { useMetronome } from '@fretwork/lib';
 import { useTheme } from './theme';
 import { Wordmark } from './components/Wordmark';
@@ -20,6 +20,11 @@ const CalibrationSheet = lazy(() =>
   import('./calibration/CalibrationSheet').then((m) => ({ default: m.CalibrationSheet })),
 );
 
+// The footer ad (adkit, third-party) is beat-independent; memo it so the per-tick
+// re-render of MetronomeApp (it reads currentBeat) doesn't re-render the ad. Props
+// are stable strings; it still re-renders on its own context (e.g. entitlement) change.
+const AdSlot = memo(AdSlotBase);
+
 /**
  * The whole metronome — one screen. All timing/state comes from the lib's
  * `useMetronome()` hook (which wires the shared store to the engine singleton);
@@ -32,6 +37,8 @@ export function MetronomeApp() {
   const [calOpen, setCalOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [heroExpanded, setHeroExpanded] = useState(false);
+  // Stable identity so the memoized TransportButton doesn't re-render every tick.
+  const handleToggle = useCallback(() => void m.toggle(), [m.toggle]);
 
   return (
     <div className="mx-auto flex min-h-full max-w-lg flex-col px-5 py-4">
@@ -102,7 +109,7 @@ export function MetronomeApp() {
 
         <BpmControl bpm={m.bpm} onChange={m.setBpm} />
 
-        <TransportButton isRunning={m.isRunning} onToggle={() => void m.toggle()} />
+        <TransportButton isRunning={m.isRunning} onToggle={handleToggle} />
       </main>
 
       {/* Controls */}

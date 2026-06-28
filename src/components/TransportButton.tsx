@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import clsx from 'clsx';
 import { Play, Square } from 'lucide-react';
 
@@ -8,7 +9,7 @@ interface TransportButtonProps {
 
 /** Big primary start/stop control. `onToggle` calls the engine's `toggle()`,
  *  which unlocks the AudioContext on the first gesture. */
-export function TransportButton({ isRunning, onToggle }: TransportButtonProps) {
+export const TransportButton = memo(function TransportButton({ isRunning, onToggle }: TransportButtonProps) {
   return (
     <button
       type="button"
@@ -30,4 +31,4 @@ export function TransportButton({ isRunning, onToggle }: TransportButtonProps) {
       )}
     </button>
   );
-}
+});

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import clsx from 'clsx';
 import { TIME_SIGNATURES } from '@fretwork/lib';
 
@@ -7,7 +8,10 @@ interface TimeSignaturePickerProps {
 }
 
 /** Segmented selector over the lib's `TIME_SIGNATURES`. */
-export function TimeSignaturePicker({ value, onChange }: TimeSignaturePickerProps) {
+export const TimeSignaturePicker = memo(function TimeSignaturePicker({
+  value,
+  onChange,
+}: TimeSignaturePickerProps) {
   return (
     <div className="flex w-full flex-col items-center gap-2">
       <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
@@ -39,4 +43,4 @@ export function TimeSignaturePicker({ value, onChange }: TimeSignaturePickerProp
       </div>
     </div>
   );
-}
+});

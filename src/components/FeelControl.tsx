@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { memo, type CSSProperties } from 'react';
 import clsx from 'clsx';
 import {
   FEEL_OPTIONS,
@@ -38,7 +38,12 @@ const FEEL_SHORT: Record<Feel, string> = {
  * is shown (enabled) only then — and reserves its row height so neighbours
  * don't shift when it toggles.
  */
-export function FeelControl({ subdivision, swing, onSubdivision, onSwing }: FeelControlProps) {
+export const FeelControl = memo(function FeelControl({
+  subdivision,
+  swing,
+  onSubdivision,
+  onSwing,
+}: FeelControlProps) {
   const current: Feel = deriveFeel(subdivision, swing);
   const swung = feelIsSwung(current);
 
@@ -107,4 +112,4 @@ export function FeelControl({ subdivision, swing, onSubdivision, onSwing }: Feel
       </div>
     </div>
   );
-}
+});

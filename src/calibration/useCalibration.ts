@@ -145,6 +145,31 @@ export function useCalibration(): CalibrationApi {
     };
   }, [readSnapshot]);
 
+  // Keep the UI in sync when the OS default output changes WHILE the sheet is open
+  // (e.g. plugging in Bluetooth headphones). The lib's installDeviceChangeListener
+  // only refreshes its own cache for the engine; it doesn't notify React — so we
+  // listen here too and re-read the label, Bluetooth flag, and the new device's
+  // per-device offset. (On open, the mount effect above already pulls fresh values
+  // since this hook mounts with the calibration sheet.)
+  useEffect(() => {
+    const media = typeof navigator !== 'undefined' ? navigator.mediaDevices : undefined;
+    if (!media?.addEventListener) return;
+    let cancelled = false;
+    const onDeviceChange = () => {
+      void (async () => {
+        await refreshOutputDeviceLabel();
+        const bt = await isOutputBluetooth();
+        if (cancelled) return;
+        setState((s) => ({ ...s, ...readSnapshot(), isBluetooth: bt }));
+      })();
+    };
+    media.addEventListener('devicechange', onDeviceChange);
+    return () => {
+      cancelled = true;
+      media.removeEventListener('devicechange', onDeviceChange);
+    };
+  }, [readSnapshot]);
+
   const grantLabelPermission = useCallback(async () => {
     await requestDeviceLabelPermission();
     await refreshOutputDeviceLabel();
