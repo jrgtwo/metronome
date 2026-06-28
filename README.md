@@ -6,6 +6,12 @@
 
 [**metronomnom.com**](https://metronomnom.com) — no install, no sign-up, runs right in your browser.
 
+<br>
+
+<img src="screenshots/mascot.gif" alt="The metronomnom mascot — a wind-up metronome eating notes in time with the beat" width="420">
+
+<br><br>
+
 <table>
 <tr>
 <td><img src="screenshots/app-light.png" alt="metronomnom — light (Retro 70s) theme" width="380"></td>
