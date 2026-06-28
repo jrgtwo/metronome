@@ -35,8 +35,9 @@ export interface NativeLatencyProvider {
  */
 export const webNativeLatency: NativeLatencyProvider = {
   id: 'web',
-  async getOutputLatencyMs() {
-    return null;
+  // No `async` (nothing to await on web) — return the Promise directly.
+  getOutputLatencyMs() {
+    return Promise.resolve(null);
   },
 };
 

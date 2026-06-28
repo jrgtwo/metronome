@@ -35,6 +35,10 @@ export function CalibrationSheet({ open, onClose }: CalibrationSheetProps) {
   if (!open) return null;
 
   return (
+    // Backdrop click-to-dismiss; Escape is handled by a window keydown effect above.
+    // CQ-4 replaces this hand-rolled overlay with the shadcn Dialog (focus-trap +
+    // keyboard for free), which deletes these two divs and their disables.
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <div
       className="fixed inset-0 z-50 grid place-items-end sm:place-items-center bg-black/60 animate-fade-in"
       onClick={onClose}
@@ -42,6 +46,8 @@ export function CalibrationSheet({ open, onClose }: CalibrationSheetProps) {
       aria-modal="true"
       aria-label="Latency calibration"
     >
+      {/* The panel stops backdrop clicks from closing the sheet (same CQ-4 note). */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div
         className="w-full max-w-md rounded-t-2xl sm:rounded-2xl border border-border bg-card p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}

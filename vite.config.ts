@@ -1,4 +1,6 @@
-import { defineConfig } from 'vite';
+// `vitest/config`'s defineConfig is a superset of Vite's that types the `test` key
+// natively — so no `as any` cast is needed (was CQ-6).
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
@@ -34,4 +36,4 @@ export default defineConfig({
     // inline the package and let Vite resolve it for any test that imports it.
     server: { deps: { inline: [/@fretwork\/lib/] } },
   },
-} as any);
+});

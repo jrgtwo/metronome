@@ -38,7 +38,9 @@ export function MetronomeApp() {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [heroExpanded, setHeroExpanded] = useState(false);
   // Stable identity so the memoized TransportButton doesn't re-render every tick.
-  const handleToggle = useCallback(() => void m.toggle(), [m.toggle]);
+  // `m.toggle` is a stable store action; alias it so the hook dep is a plain identifier.
+  const toggleMetronome = m.toggle;
+  const handleToggle = useCallback(() => void toggleMetronome(), [toggleMetronome]);
 
   return (
     <div className="mx-auto flex min-h-full max-w-lg flex-col px-5 py-4">
