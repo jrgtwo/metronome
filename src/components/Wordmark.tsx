@@ -14,7 +14,7 @@ export const Wordmark = memo(function Wordmark() {
     <h1 className="flex items-center gap-2">
       <MascotMark className="h-7 w-7 shrink-0" />
       <span className="font-display text-xl font-bold tracking-tight text-foreground">
-        metro<span className="text-degree-third">nomnom</span>
+        metro<span className="text-pop">nomnom</span>
       </span>
       <span className="sr-only"> — Free Online Metronome</span>
     </h1>

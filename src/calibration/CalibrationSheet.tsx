@@ -1,5 +1,12 @@
 import { useEffect } from 'react';
 import { Bluetooth, X, RotateCcw, Minus, Plus } from 'lucide-react';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useCalibration } from './useCalibration';
 
 interface CalibrationSheetProps {
@@ -32,48 +39,45 @@ export function CalibrationSheet({ open, onClose }: CalibrationSheetProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, cal.tapRunning, cal]);
 
-  if (!open) return null;
-
   return (
-    // Backdrop click-to-dismiss; Escape is handled by a window keydown effect above.
-    // CQ-4 replaces this hand-rolled overlay with the shadcn Dialog (focus-trap +
-    // keyboard for free), which deletes these two divs and their disables.
-    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
-    <div
-      className="fixed inset-0 z-50 grid place-items-end sm:place-items-center bg-black/60 animate-fade-in"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Latency calibration"
+    // shadcn Dialog gives focus-trap, Escape, and backdrop-click-to-close for free
+    // (replacing the old hand-rolled overlay + its a11y eslint-disables). It renders
+    // as a bottom sheet on mobile and centered on sm+ via position="sheet".
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) onClose();
+      }}
     >
-      {/* The panel stops backdrop clicks from closing the sheet (same CQ-4 note). */}
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
-      <div
-        className="w-full max-w-md rounded-t-2xl sm:rounded-2xl border border-border bg-card p-5 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <DialogContent position="sheet">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-mono text-sm uppercase tracking-[0.2em] text-pearl">Calibration</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="grid h-8 w-8 place-items-center rounded-full bg-secondary text-muted-foreground hover:text-pearl"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <DialogTitle className="font-mono text-sm font-normal uppercase leading-normal tracking-label-sm text-beat">
+            Calibration
+          </DialogTitle>
+          <DialogClose asChild>
+            <button
+              type="button"
+              aria-label="Close"
+              className="grid h-8 w-8 place-items-center rounded-full bg-secondary text-muted-foreground hover:text-beat"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </DialogClose>
         </div>
+        <DialogDescription className="sr-only">
+          Compensate for audio output latency so beats land on time.
+        </DialogDescription>
 
         {/* Device */}
         <div className="mb-4 flex items-center gap-2 text-sm">
-          {cal.isBluetooth && <Bluetooth className="h-4 w-4 text-degree-fifth" />}
+          {cal.isBluetooth && <Bluetooth className="h-4 w-4 text-info" />}
           {cal.deviceLabel ? (
-            <span className="text-pearl">{cal.deviceLabel}</span>
+            <span className="text-beat">{cal.deviceLabel}</span>
           ) : (
             <button
               type="button"
               onClick={() => void cal.grantLabelPermission()}
-              className="text-degree-root hover:underline"
+              className="text-primary hover:underline"
             >
               Enable device names
             </button>
@@ -93,7 +97,7 @@ export function CalibrationSheet({ open, onClose }: CalibrationSheetProps) {
           <button
             type="button"
             onClick={cal.applyNative}
-            className="mb-4 w-full rounded-lg bg-degree-root py-2 text-sm font-medium text-primary-foreground"
+            className="mb-4 w-full rounded-lg bg-primary py-2 text-sm font-medium text-primary-foreground"
           >
             Use native latency ({ms(cal.nativeLatencyMs)})
           </button>
@@ -110,7 +114,7 @@ export function CalibrationSheet({ open, onClose }: CalibrationSheetProps) {
             <button
               type="button"
               onClick={() => void cal.startTapIn()}
-              className="w-full rounded-md bg-secondary py-2 text-sm text-pearl hover:bg-secondary/80"
+              className="w-full rounded-md bg-secondary py-2 text-sm text-beat hover:bg-secondary/80"
             >
               Start tap-in
             </button>
@@ -119,7 +123,7 @@ export function CalibrationSheet({ open, onClose }: CalibrationSheetProps) {
               <button
                 type="button"
                 onClick={cal.registerTap}
-                className="grid h-24 w-full place-items-center rounded-md bg-degree-root/20 text-sm text-pearl active:bg-degree-root/40"
+                className="grid h-24 w-full place-items-center rounded-md bg-primary/20 text-sm text-beat active:bg-primary/40"
               >
                 Tap with the click — or press Space
               </button>
@@ -139,7 +143,7 @@ export function CalibrationSheet({ open, onClose }: CalibrationSheetProps) {
                   type="button"
                   onClick={cal.finishTapIn}
                   disabled={cal.tapMeasuredMs == null}
-                  className="flex-1 rounded-md bg-degree-root py-1.5 text-xs text-primary-foreground disabled:opacity-40"
+                  className="flex-1 rounded-md bg-primary py-1.5 text-xs text-primary-foreground disabled:opacity-40"
                 >
                   Save
                 </button>
@@ -151,25 +155,25 @@ export function CalibrationSheet({ open, onClose }: CalibrationSheetProps) {
         {/* Manual offset + reset */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            <span className="font-mono text-2xs uppercase tracking-wider text-muted-foreground">
               Offset
             </span>
             <button
               type="button"
               aria-label="Decrease offset"
               onClick={() => cal.setOffset(cal.offsetMs - 5)}
-              className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-muted-foreground hover:text-pearl"
+              className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-muted-foreground hover:text-beat"
             >
               <Minus className="h-3.5 w-3.5" />
             </button>
-            <span className="w-14 text-center font-mono text-sm tabular-nums text-pearl">
+            <span className="w-14 text-center font-mono text-sm tabular-nums text-beat">
               {ms(cal.offsetMs)}
             </span>
             <button
               type="button"
               aria-label="Increase offset"
               onClick={() => cal.setOffset(cal.offsetMs + 5)}
-              className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-muted-foreground hover:text-pearl"
+              className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-muted-foreground hover:text-beat"
             >
               <Plus className="h-3.5 w-3.5" />
             </button>
@@ -177,14 +181,14 @@ export function CalibrationSheet({ open, onClose }: CalibrationSheetProps) {
           <button
             type="button"
             onClick={cal.reset}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-pearl"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-beat"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             Reset
           </button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -192,7 +196,7 @@ function Row({ label, value, accent }: { label: string; value: string; accent?: 
   return (
     <div className="flex items-center justify-between">
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className={accent ? 'text-degree-root' : 'text-pearl'}>{value}</dd>
+      <dd className={accent ? 'text-primary' : 'text-beat'}>{value}</dd>
     </div>
   );
 }

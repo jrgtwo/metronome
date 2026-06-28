@@ -10,9 +10,9 @@ import { AdsProvider, entitlementStore } from 'adkit';
 import { MetronomeApp } from './MetronomeApp';
 import { adsConfig } from './ads.config';
 
-// Lib design tokens MUST be imported before the app's own stylesheet so Tailwind's
-// generated layers can reference the CSS variables.
-import '@fretwork/lib/styles/tokens.css';
+// App-owned design tokens + Tailwind layers. The app owns its entire design
+// system (see src/styles/index.css); nothing stylistic is imported from
+// @fretwork/lib, which is consumed only for logic (the useMetronome engine).
 import './styles/index.css';
 
 // Dev-only: expose the entitlement store so you can test the ad-hide seam from

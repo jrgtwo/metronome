@@ -1,4 +1,4 @@
-import { memo, type CSSProperties } from 'react';
+import { memo } from 'react';
 import clsx from 'clsx';
 import {
   FEEL_OPTIONS,
@@ -9,6 +9,8 @@ import {
   DEFAULT_SWUNG_INTENSITY,
 } from '@fretwork/lib';
 import type { Feel, SubdivisionId } from '@fretwork/lib';
+import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
+import { Slider } from './ui/slider';
 
 interface FeelControlProps {
   subdivision: SubdivisionId;
@@ -59,54 +61,50 @@ export const FeelControl = memo(function FeelControl({
 
   return (
     <div className="flex w-full flex-col items-center gap-2">
-      <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+      <span className="font-mono text-2xs uppercase tracking-label text-muted-foreground">
         Feel
       </span>
       {/* One centered line, sized to fit a phone without scrolling. */}
       <div className="flex w-full justify-center">
-        <div className="flex max-w-full flex-nowrap gap-0.5 rounded-full bg-card p-1 shadow-[0_3px_0_hsl(var(--shadow))]">
-          {FEEL_OPTIONS.map((feel) => {
-            const selected = feel === current;
-            return (
-              <button
-                key={feel}
-                type="button"
-                onClick={() => selectFeel(feel)}
-                aria-pressed={selected}
-                title={FEEL_LABELS[feel]}
-                aria-label={FEEL_LABELS[feel]}
-                className={clsx(
-                  'shrink-0 whitespace-nowrap rounded-full px-1.5 py-1.5 text-xs font-medium transition',
-                  selected
-                    ? 'bg-degree-root text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {FEEL_SHORT[feel]}
-              </button>
-            );
-          })}
-        </div>
+        <ToggleGroup
+          type="single"
+          value={current}
+          // Radix single-select allows deselect (→ ''); keep one always selected.
+          onValueChange={(v) => {
+            if (v) selectFeel(v as Feel);
+          }}
+          className="flex max-w-full flex-nowrap gap-0.5 rounded-full bg-card p-1 shadow-btn"
+        >
+          {FEEL_OPTIONS.map((feel) => (
+            <ToggleGroupItem
+              key={feel}
+              value={feel}
+              title={FEEL_LABELS[feel]}
+              aria-label={FEEL_LABELS[feel]}
+              className="shrink-0 whitespace-nowrap rounded-full px-1.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+            >
+              {FEEL_SHORT[feel]}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
       </div>
 
       {/* Swing intensity — reserved height; inert when the feel isn't swung. */}
       <div className={clsx('flex h-7 items-center gap-2 transition-opacity', swung ? 'opacity-100' : 'opacity-30')}>
-        <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+        <span className="font-mono text-2xs uppercase tracking-wider text-muted-foreground">
           Swing
         </span>
-        <input
-          type="range"
+        <Slider
           min={SWING_MIN}
           max={SWING_MAX}
           step={0.01}
-          value={swing}
+          value={[swing]}
           disabled={!swung}
-          onChange={(e) => onSwing(Number(e.target.value))}
+          onValueChange={([v]) => onSwing(v)}
           aria-label="Swing intensity"
-          className="metro-range w-32 disabled:cursor-not-allowed"
-          style={{ '--range-fill': `${((swing - SWING_MIN) / (SWING_MAX - SWING_MIN)) * 100}%` } as CSSProperties}
+          className="w-32"
         />
-        <span className="w-8 font-mono text-[10px] tabular-nums text-muted-foreground">
+        <span className="w-8 font-mono text-2xs tabular-nums text-muted-foreground">
           {Math.round(((swing - SWING_MIN) / (SWING_MAX - SWING_MIN)) * 100)}%
         </span>
       </div>

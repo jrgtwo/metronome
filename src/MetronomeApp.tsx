@@ -3,6 +3,7 @@ import { SlidersHorizontal } from 'lucide-react';
 import { AdSlot as AdSlotBase } from 'adkit';
 import { useMetronome } from '@fretwork/lib';
 import { useTheme } from './theme';
+import { Button } from './components/ui/button';
 import { Wordmark } from './components/Wordmark';
 import { ThemeToggle } from './components/ThemeToggle';
 import { MascotHero } from './components/Mascot';
@@ -49,15 +50,16 @@ export function MetronomeApp() {
         <Wordmark />
         <div className="flex items-center gap-2">
           <ThemeToggle theme={theme} onToggle={toggle} />
-          <button
+          <Button
             type="button"
+            variant="3d"
             onClick={() => setCalOpen(true)}
             aria-label="Latency calibration"
-            className="flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-xs text-muted-foreground shadow-[0_3px_0_hsl(var(--shadow))] transition-all hover:text-foreground active:translate-y-[3px] active:shadow-none"
+            className="h-auto gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />
             Calibrate
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -70,7 +72,7 @@ export function MetronomeApp() {
             the emphasis shifts to the metronome without leaving the screen. */}
         <div
           className={`w-full transition-[max-width] duration-300 ease-out ${
-            heroExpanded ? 'max-w-[170px]' : 'max-w-[300px]'
+            heroExpanded ? 'max-w-arc-compact' : 'max-w-arc'
           }`}
         >
           <BeatDots

@@ -5,7 +5,8 @@ const config: Config = {
   darkMode: 'class',
   // This app renders only its own components (+ adkit's unstyled ones), so we
   // scan only this repo's source. The theme below maps Tailwind tokens onto the
-  // CSS variables from @fretwork/lib's tokens.css (imported in main.tsx).
+  // app-owned CSS variables defined in src/styles/index.css. Nothing here is
+  // inherited from @fretwork/lib (that lib is logic-only — no styling).
   content: [
     './index.html',
     './src/**/*.{ts,tsx}',
@@ -13,23 +14,10 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        charcoal: {
-          DEFAULT: 'hsl(var(--charcoal) / <alpha-value>)',
-          deep: 'hsl(var(--charcoal-deep) / <alpha-value>)',
-          raised: 'hsl(var(--charcoal-raised) / <alpha-value>)',
-        },
-        rosewood: {
-          DEFAULT: 'hsl(var(--rosewood) / <alpha-value>)',
-          dark: 'hsl(var(--rosewood-dark) / <alpha-value>)',
-          light: 'hsl(var(--rosewood-light) / <alpha-value>)',
-        },
-        nickel: 'hsl(var(--nickel) / <alpha-value>)',
-        pearl: 'hsl(var(--pearl) / <alpha-value>)',
-
-        'degree-root': 'hsl(var(--degree-root) / <alpha-value>)',
-        'degree-third': 'hsl(var(--degree-third) / <alpha-value>)',
-        'degree-fifth': 'hsl(var(--degree-fifth) / <alpha-value>)',
-        'degree-tone': 'hsl(var(--degree-tone) / <alpha-value>)',
+        // App-owned accent palette (per-theme values in src/styles/index.css).
+        beat: 'hsl(var(--beat) / <alpha-value>)',
+        pop: 'hsl(var(--pop) / <alpha-value>)',
+        info: 'hsl(var(--info) / <alpha-value>)',
 
         background: 'hsl(var(--background) / <alpha-value>)',
         foreground: 'hsl(var(--foreground) / <alpha-value>)',
@@ -48,19 +36,55 @@ const config: Config = {
         border: 'hsl(var(--border) / <alpha-value>)',
         input: 'hsl(var(--input) / <alpha-value>)',
         ring: 'hsl(var(--ring) / <alpha-value>)',
+        overlay: 'hsl(var(--overlay) / <alpha-value>)',
+        'pop-foreground': 'hsl(var(--pop-foreground) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
-        // Rounded display face for the playful theme's wordmark (the standard
-        // theme leaves it unused). Body/control type in that theme is swapped to
-        // Fredoka/Baloo via the `:root.theme-playful` overrides in index.css.
+        // Rounded display face for both "fun" themes' wordmark. Body/control type
+        // is swapped to Fredoka/Baloo via the :root.theme-* overrides in index.css.
         display: ['Fredoka', '"Baloo 2"', 'ui-rounded', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+      },
+      // App-owned size tokens (the lib provides no size system beyond --radius).
+      boxShadow: {
+        // 3D "chunky" control depths (the offset color is the themed --shadow).
+        btn: '0 3px 0 hsl(var(--shadow))',
+        transport: '0 5px 0 hsl(var(--shadow))',
+        'transport-play': '0 6px 0 hsl(var(--primary-foreground))',
+        'transport-play-active': '0 1px 0 hsl(var(--primary-foreground))',
+        // Beat-pill glows.
+        'glow-primary': '0 0 22px -2px hsl(var(--primary))',
+        'glow-beat': '0 0 18px -4px hsl(var(--beat))',
+        'glow-beat-sm': '0 0 10px -3px hsl(var(--beat))',
+        // Slider thumb (used by the shadcn Slider).
+        thumb: '0 1px 3px hsl(var(--shadow) / 0.8)',
+      },
+      fontSize: {
+        '2xs': '0.625rem', // 10px — eyebrow/overline labels
+      },
+      letterSpacing: {
+        label: '0.3em', // footer eyebrow labels
+        'label-sm': '0.2em', // tighter eyebrow (calibration title)
+      },
+      translate: {
+        press: '3px', // 3D control "press-down" travel
+        'press-lg': '5px', // transport press travel
+      },
+      borderWidth: {
+        thumb: '3px', // slider thumb ring
+      },
+      maxWidth: {
+        arc: '300px', // beat-arc / readout column
+        'arc-compact': '170px', // arc when the hero is enlarged
+      },
+      maxHeight: {
+        dialog: '85vh', // scrollable dialog content
       },
       keyframes: {
         'fade-in': { '0%': { opacity: '0' }, '100%': { opacity: '1' } },

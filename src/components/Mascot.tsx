@@ -31,9 +31,9 @@ import {
  * rotation and the note conveyor. Colors come from theme tokens; `BODY_D` is a
  * fixed mid-amber used only for on-body shading (reads on either surface).
  */
-const BODY = 'hsl(var(--degree-root))'; // metronome body + beat notes (amber / mustard)
-const BODY_D = 'hsl(38 60% 46%)'; // base, pendulum — on-body shading
-const BEAT = 'hsl(var(--degree-third))'; // accent notes / blush (strawberry / burnt orange)
+const BODY = 'hsl(var(--primary))'; // metronome body + beat notes (amber / mustard)
+const BODY_D = 'hsl(var(--wood))'; // base, pendulum — on-body shading
+const BEAT = 'hsl(var(--pop))'; // accent notes / blush (strawberry / burnt orange)
 const DARK = 'hsl(var(--primary-foreground))'; // mouth + pupils (dark in both themes)
 const STAFF = 'hsl(var(--muted-foreground))'; // staff lines
 
@@ -115,9 +115,9 @@ function Metronome({ pendulumRef, bodyRef, faceRef, baseRef }: MetronomeRefs) {
       <path ref={bodyRef} d={bodyRef ? bodyPath(0, BODY_AMP) : REST_BODY_D} fill={BODY} />
       <Pendulum pendulumRef={pendulumRef} />
       <g ref={faceRef}>
-        <circle cx="44" cy="58" r="5" fill="#fff" />
+        <circle cx="44" cy="58" r="5" fill="hsl(var(--mascot-eye))" />
         <circle cx="45.2" cy="59" r="2.5" fill={DARK} />
-        <circle cx="56" cy="58" r="5" fill="#fff" />
+        <circle cx="56" cy="58" r="5" fill="hsl(var(--mascot-eye))" />
         <circle cx="57.2" cy="59" r="2.5" fill={DARK} />
         <path d="M42 69 Q50 80 58 69 Q50 74 42 69 Z" fill={DARK} />
         <circle cx="40" cy="66" r="3" fill={BEAT} opacity="0.4" />

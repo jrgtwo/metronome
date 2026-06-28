@@ -28,7 +28,7 @@ export function AboutModal({ open, onOpenChange }: AboutModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto font-sans">
+      <DialogContent className="max-h-dialog overflow-y-auto font-sans">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">About metronomnom</DialogTitle>
           <DialogDescription>

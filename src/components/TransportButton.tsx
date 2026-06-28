@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import clsx from 'clsx';
 import { Play, Square } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface TransportButtonProps {
   isRunning: boolean;
@@ -11,17 +12,17 @@ interface TransportButtonProps {
  *  which unlocks the AudioContext on the first gesture. */
 export const TransportButton = memo(function TransportButton({ isRunning, onToggle }: TransportButtonProps) {
   return (
-    <button
+    <Button
       type="button"
+      variant="transport"
       onClick={onToggle}
       aria-label={isRunning ? 'Stop' : 'Start'}
       aria-pressed={isRunning}
       className={clsx(
-        'grid h-20 w-20 place-items-center rounded-full transition-all duration-75',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        'h-20 w-20',
         isRunning
-          ? 'bg-secondary text-pearl shadow-[0_5px_0_hsl(var(--shadow))] hover:bg-secondary/80 active:translate-y-[5px] active:shadow-none'
-          : 'bg-degree-third text-white shadow-[0_6px_0_hsl(var(--primary-foreground))] hover:brightness-105 active:translate-y-[5px] active:shadow-[0_1px_0_hsl(var(--primary-foreground))]',
+          ? 'bg-secondary text-beat shadow-transport hover:bg-secondary/80 active:shadow-none'
+          : 'bg-pop text-pop-foreground shadow-transport-play hover:brightness-105 active:shadow-transport-play-active',
       )}
     >
       {isRunning ? (
@@ -29,6 +30,6 @@ export const TransportButton = memo(function TransportButton({ isRunning, onTogg
       ) : (
         <Play className="ml-1 h-8 w-8" fill="currentColor" strokeWidth={0} />
       )}
-    </button>
+    </Button>
   );
 });

@@ -130,15 +130,15 @@ export function BeatDots({
                 it.on && 'animate-beat-pop',
                 it.sub
                   ? it.on
-                    ? 'bg-pearl shadow-[0_0_10px_-3px_hsl(var(--pearl))]'
-                    : 'bg-pearl/15'
+                    ? 'bg-beat shadow-glow-beat-sm'
+                    : 'bg-beat/15'
                   : it.on
                     ? it.accent
-                      ? 'bg-degree-root shadow-[0_0_22px_-2px_hsl(var(--degree-root))]'
-                      : 'bg-pearl shadow-[0_0_18px_-4px_hsl(var(--pearl))]'
+                      ? 'bg-primary shadow-glow-primary'
+                      : 'bg-beat shadow-glow-beat'
                     : it.accent
-                      ? 'bg-degree-root/25'
-                      : 'bg-pearl/15',
+                      ? 'bg-primary/25'
+                      : 'bg-beat/15',
               )}
               style={{ width: w, height: len }}
             />
