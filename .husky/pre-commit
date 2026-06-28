@@ -1,1 +1,10 @@
 pnpm lint
+
+# Regenerate the paint-shell skeleton from the real app when layout-affecting files
+# change, so skeleton.html never drifts. Renders the built app in headless Chromium
+# (~5-8s; needs a local Chromium — `npx playwright install chromium` once). Skip a
+# commit with `--no-verify` if the browser step is unavailable.
+if git diff --cached --name-only | grep -qE '^(src/|index\.html$)'; then
+  echo "Layout files changed — regenerating skeleton.html…"
+  pnpm snapshot && git add skeleton.html
+fi

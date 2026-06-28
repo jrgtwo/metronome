@@ -150,49 +150,59 @@
       :root.theme-light { background: hsl(38 34% 85%); }
       :root.theme-dark { background: hsl(26 16% 13%); }
 
-      #ps {
-        box-sizing: border-box;
-        min-height: 100%;
-        max-width: 32rem;
-        margin: 0 auto;
-        padding: 1rem 1.25rem;
-        display: flex;
-        flex-direction: column;
-        font-family: "Baloo 2", ui-rounded, system-ui, sans-serif;
-      }
-      #ps .ps-head { display: flex; align-items: center; justify-content: space-between; }
-      #ps .ps-brand { display: flex; align-items: center; gap: 0.5rem; font-size: 1.25rem; font-weight: 700; font-family: "Fredoka", ui-rounded, system-ui, sans-serif; }
-      #ps .ps-actions { display: flex; gap: 0.5rem; }
-      #ps .ps-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 0.5rem 0; }
-      #ps .ps-foot { display: flex; flex-direction: column; align-items: center; gap: 1rem; width: 100%; padding-top: 0.5rem; }
-      #ps .ps-num { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 4.5rem; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
-      #ps .ps-bpm { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.3em; margin-top: 0.25rem; }
-      #ps .ps-slider { display: flex; align-items: center; gap: 0.75rem; width: 100%; max-width: 20rem; }
-      #ps .c { background: hsl(40 38% 91%); }
-      #ps .logo { width: 1.75rem; height: 1.75rem; border-radius: 9999px; }
-      #ps .pill { height: 2rem; border-radius: 9999px; }
-      #ps .pill-sm { width: 2rem; }
-      #ps .pill-lg { width: 6rem; }
-      #ps .mascot { width: 9rem; height: 5rem; border-radius: 1rem; margin-top: -0.25rem; }
-      #ps .dot { width: 2.5rem; height: 2.5rem; border-radius: 9999px; }
-      #ps .bar { flex: 1; height: 0.5rem; border-radius: 9999px; }
-      #ps .play { width: 5rem; height: 5rem; border-radius: 9999px; }
-      #ps .seg { width: 100%; max-width: 28rem; height: 2.25rem; border-radius: 9999px; }
-      #ps .swing { width: 100%; max-width: 20rem; height: 0.5rem; border-radius: 9999px; }
-      #ps .vol { width: 100%; max-width: 20rem; height: 2.25rem; border-radius: 9999px; }
-      #ps .ad { width: 100%; max-width: 24rem; height: 4rem; border-radius: 1rem; margin-top: 0.5rem; }
+      /* `.skel` is the injected snapshot of the real app DOM (skeleton.html). Paint it
+         as flat gray placeholders: the real DOM gives exact layout/positions, these
+         rules give the gray look. Literal grays per theme so it styles instantly. */
+      .skel { --skel: 38 24% 79%; }
+      :root.theme-dark .skel { --skel: 28 8% 24%; }
 
-      :root.theme-light #ps { color: hsl(24 32% 22%); }
-      :root.theme-light #ps .ps-num { color: hsl(24 32% 26%); }
-      :root.theme-light #ps .ps-bpm { color: hsl(28 18% 40%); }
-      :root.theme-light #ps .accent { color: hsl(18 62% 48%); }
-      :root.theme-light #ps .play { background: hsl(18 62% 48%); }
-      :root.theme-dark #ps { color: hsl(36 30% 90%); }
-      :root.theme-dark #ps .c { background: hsl(26 14% 19%); }
-      :root.theme-dark #ps .ps-num { color: hsl(36 30% 88%); }
-      :root.theme-dark #ps .ps-bpm { color: hsl(30 12% 64%); }
-      :root.theme-dark #ps .accent { color: hsl(4 80% 64%); }
-      :root.theme-dark #ps .play { background: hsl(4 80% 64%); }
+      .skel,
+      .skel * {
+        color: transparent !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+        background-image: none !important;
+        outline: none !important;
+      }
+      /* Whole-element blocks (their content hidden): the wordmark, controls, icons/mascot. */
+      .skel h1,
+      .skel button,
+      .skel input,
+      .skel svg {
+        background-color: hsl(var(--skel)) !important;
+      }
+      .skel h1 *,
+      .skel button *,
+      .skel svg * {
+        visibility: hidden !important;
+      }
+      .skel button,
+      .skel input { border-radius: 9999px; }
+      .skel svg { border-radius: 0.75rem; }
+      .skel h1 { border-radius: 0.5rem; }
+      /* Text leaves elsewhere (the 120 readout, BPM, labels) → gray bars. */
+      .skel span:not(:has(*)):not(:empty),
+      .skel p,
+      .skel dt,
+      .skel dd,
+      .skel li { background-color: hsl(var(--skel)) !important; border-radius: 0.375rem; }
+      /* Card-ish surfaces (segmented rows, the ad) → gray block. */
+      .skel [class*="bg-card"],
+      .skel [class*="bg-degree"],
+      .skel [class*="bg-secondary"],
+      .skel [class*="bg-primary"] { background-color: hsl(var(--skel)) !important; }
+      /* Range-slider thumbs are pseudo-elements (not caught by `.skel *`) — gray them. */
+      .skel input[type="range"]::-webkit-slider-thumb {
+        background: hsl(var(--skel)) !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+      }
+      .skel input[type="range"]::-moz-range-thumb {
+        background: hsl(var(--skel)) !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+      }
     </style>
 
     <!-- Apply the saved (or default 'light') theme before first paint to avoid a
@@ -210,39 +220,12 @@
     </script>
   </head>
   <body>
-    <!-- Paint-shell: a static skeleton of the above-the-fold layout so the page
-         paints instantly (FCP/LCP) instead of waiting for the JS bundle — this is
-         a client-rendered SPA, so #root is otherwise empty until React runs. React
-         (createRoot) clears these children on mount and renders the real app. Keep
-         this roughly in sync with MetronomeApp's layout so the swap doesn't shift
-         (CLS). Uses system-fallback fonts so it never waits on web fonts. -->
-    <div id="root">
-      <div id="ps" aria-hidden="true">
-        <div class="ps-head">
-          <span class="ps-brand"><span class="logo c"></span><span>metro<span class="accent">nomnom</span></span></span>
-          <span class="ps-actions"><span class="pill pill-sm c"></span><span class="pill pill-lg c"></span></span>
-        </div>
-        <div class="ps-main">
-          <div style="height: 2.25rem"></div>
-          <div style="display:flex;flex-direction:column;align-items:center">
-            <span class="ps-num">120</span>
-            <span class="ps-bpm">BPM</span>
-          </div>
-          <span class="mascot c"></span>
-          <div class="ps-slider">
-            <span class="dot c"></span><span class="bar c"></span><span class="dot c"></span>
-          </div>
-          <span class="play"></span>
-        </div>
-        <div class="ps-foot">
-          <span class="seg c"></span>
-          <span class="seg c"></span>
-          <span class="swing c"></span>
-          <span class="vol c"></span>
-          <span class="ad c"></span>
-        </div>
-      </div>
-    </div>
+    <!-- Paint-shell: at build time the inject-skeleton plugin (vite.config.ts) fills
+         #root with `<div class="skel">` = a snapshot of the REAL rendered app (made by
+         `pnpm snapshot`, committed as skeleton.html). The `.skel` CSS below paints that
+         real DOM as flat gray placeholders, so the layout matches exactly (no jump) and
+         React (createRoot) clears it on mount. Empty in dev / before the first snapshot. -->
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
     <!-- Crawlable About/FAQ copy. Hidden via CSS (#about-content { display:none });
