@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@fretwork/lib':
-        specifier: github:jrgtwo/fretwork-lib#v0.1.0
-        version: https://codeload.github.com/jrgtwo/fretwork-lib/tar.gz/5bc1c3867e24337d899751b6fd821470342d0d13(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: github:jrgtwo/fretwork-lib#v0.2.0
+        version: https://codeload.github.com/jrgtwo/fretwork-lib/tar.gz/7caa2888d737b0efbf1e5ab622315bb77203473e(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-dialog':
         specifier: ^1.1.17
         version: 1.1.17(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -235,8 +235,8 @@ packages:
   '@floating-ui/utils@0.2.11':
     resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
 
-  '@fretwork/lib@https://codeload.github.com/jrgtwo/fretwork-lib/tar.gz/5bc1c3867e24337d899751b6fd821470342d0d13':
-    resolution: {tarball: https://codeload.github.com/jrgtwo/fretwork-lib/tar.gz/5bc1c3867e24337d899751b6fd821470342d0d13}
+  '@fretwork/lib@https://codeload.github.com/jrgtwo/fretwork-lib/tar.gz/7caa2888d737b0efbf1e5ab622315bb77203473e':
+    resolution: {tarball: https://codeload.github.com/jrgtwo/fretwork-lib/tar.gz/7caa2888d737b0efbf1e5ab622315bb77203473e}
     version: 0.1.0
     peerDependencies:
       react: '>=18'
@@ -2772,7 +2772,7 @@ snapshots:
 
   '@floating-ui/utils@0.2.11': {}
 
-  '@fretwork/lib@https://codeload.github.com/jrgtwo/fretwork-lib/tar.gz/5bc1c3867e24337d899751b6fd821470342d0d13(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@fretwork/lib@https://codeload.github.com/jrgtwo/fretwork-lib/tar.gz/7caa2888d737b0efbf1e5ab622315bb77203473e(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@radix-ui/react-dialog': 1.1.17(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-radio-group': 1.4.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
