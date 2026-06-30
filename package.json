@@ -22,6 +22,7 @@
     "@radix-ui/react-toggle": "^1.1.12",
     "@radix-ui/react-toggle-group": "^1.1.13",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "adkit": "github:jrgtwo/adkit#v0.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

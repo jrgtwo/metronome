@@ -6,6 +6,7 @@ import './audio-context-init';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { AdsProvider, entitlementStore } from 'adkit';
 import { MetronomeApp } from './MetronomeApp';
 import { adsConfig } from './ads.config';
@@ -28,6 +29,7 @@ createRoot(document.getElementById('root')!).render(
     <AdsProvider config={adsConfig}>
       <MetronomeApp />
       <Analytics />
+      <SpeedInsights />
     </AdsProvider>
   </StrictMode>,
 );
