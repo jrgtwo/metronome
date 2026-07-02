@@ -113,7 +113,7 @@ export function MetronomeApp() {
           />
         </button>
 
-        <BpmControl bpm={m.bpm} onChange={m.setBpm} />
+        <BpmControl bpm={m.bpm} onChange={m.setBpm} spacebarEnabled={!calOpen && !aboutOpen} />
 
         <TransportButton isRunning={m.isRunning} onToggle={handleToggle} />
       </main>

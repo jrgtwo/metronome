@@ -1,7 +1,8 @@
 import { memo } from 'react';
-import { Minus, Plus } from 'lucide-react';
+import { Hand, Minus, Plus } from 'lucide-react';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
+import { useTapTempo } from '../tapTempo';
 
 const BPM_MIN = 40;
 const BPM_MAX = 240;
@@ -37,44 +38,66 @@ export const TempoReadout = memo(function TempoReadout({
 interface BpmControlProps {
   bpm: number;
   onChange: (bpm: number) => void;
+  /** Whether the global spacebar tap is active (off while a dialog is open). */
+  spacebarEnabled?: boolean;
 }
 
-/** Tempo controls below the arc: fine steppers flanking the coarse slider. The
- *  store clamps to 40–240, so raw values are safe to pass through. */
-export const BpmControl = memo(function BpmControl({ bpm, onChange }: BpmControlProps) {
+/** Tempo controls below the arc: fine steppers flanking the coarse slider, plus a
+ *  tap-tempo button (Space also taps). The store clamps to 40–240, so raw values
+ *  are safe to pass through. */
+export const BpmControl = memo(function BpmControl({
+  bpm,
+  onChange,
+  spacebarEnabled = true,
+}: BpmControlProps) {
   const step = (delta: number) => onChange(bpm + delta);
+  const { tap } = useTapTempo({ onBpm: onChange, spacebarEnabled });
 
   return (
-    <div className="flex w-full max-w-xs items-center gap-3">
+    <div className="flex w-full max-w-xs flex-col items-center gap-2">
+      <div className="flex w-full items-center gap-3">
+        <Button
+          type="button"
+          variant="3d"
+          size="icon"
+          aria-label="Decrease tempo"
+          onClick={() => step(-1)}
+          className={stepperClass}
+        >
+          <Minus className="h-4 w-4" />
+        </Button>
+
+        <Slider
+          min={BPM_MIN}
+          max={BPM_MAX}
+          value={[bpm]}
+          onValueChange={([v]) => onChange(v)}
+          aria-label="Tempo"
+          className="flex-1"
+        />
+
+        <Button
+          type="button"
+          variant="3d"
+          size="icon"
+          aria-label="Increase tempo"
+          onClick={() => step(1)}
+          className={stepperClass}
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+
       <Button
         type="button"
         variant="3d"
-        size="icon"
-        aria-label="Decrease tempo"
-        onClick={() => step(-1)}
-        className={stepperClass}
+        onClick={tap}
+        aria-label="Tap tempo"
+        title="Tap tempo — or press Space"
+        className="h-auto gap-1.5 px-4 py-1.5 text-xs text-muted-foreground hover:text-foreground"
       >
-        <Minus className="h-4 w-4" />
-      </Button>
-
-      <Slider
-        min={BPM_MIN}
-        max={BPM_MAX}
-        value={[bpm]}
-        onValueChange={([v]) => onChange(v)}
-        aria-label="Tempo"
-        className="flex-1"
-      />
-
-      <Button
-        type="button"
-        variant="3d"
-        size="icon"
-        aria-label="Increase tempo"
-        onClick={() => step(1)}
-        className={stepperClass}
-      >
-        <Plus className="h-4 w-4" />
+        <Hand className="h-3.5 w-3.5" />
+        Tap
       </Button>
     </div>
   );
