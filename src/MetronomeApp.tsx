@@ -4,6 +4,7 @@ import { AdSlot as AdSlotBase } from 'adkit';
 import { useMetronome } from '@fretwork/lib';
 import { useTheme } from './theme';
 import { usePersistSettings } from './settings';
+import { useUrlState } from './urlState';
 import { Button } from './components/ui/button';
 import { Wordmark } from './components/Wordmark';
 import { ThemeToggle } from './components/ThemeToggle';
@@ -36,6 +37,7 @@ const AdSlot = memo(AdSlotBase);
 export function MetronomeApp() {
   const m = useMetronome();
   usePersistSettings(m); // restore saved settings on load; save (debounced) on change
+  useUrlState(m); // shareable/bookmarkable URL — a link's params win over saved settings
   const { theme, toggle } = useTheme();
   const [calOpen, setCalOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
