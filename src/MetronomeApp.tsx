@@ -3,6 +3,7 @@ import { SlidersHorizontal } from 'lucide-react';
 import { AdSlot as AdSlotBase } from 'adkit';
 import { useMetronome } from '@fretwork/lib';
 import { useTheme } from './theme';
+import { usePersistSettings } from './settings';
 import { Button } from './components/ui/button';
 import { Wordmark } from './components/Wordmark';
 import { ThemeToggle } from './components/ThemeToggle';
@@ -34,6 +35,7 @@ const AdSlot = memo(AdSlotBase);
  */
 export function MetronomeApp() {
   const m = useMetronome();
+  usePersistSettings(m); // restore saved settings on load; save (debounced) on change
   const { theme, toggle } = useTheme();
   const [calOpen, setCalOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
