@@ -26,18 +26,23 @@ function ms(n: number): string {
 export function CalibrationSheet({ open, onClose }: CalibrationSheetProps) {
   const cal = useCalibration();
 
+  // Destructure the stable members: `useCalibration()` returns a fresh object
+  // literal each render, so depending on the whole `cal` would re-subscribe the
+  // listener every render. `registerTap` is a stable useCallback ref (CQ-10).
+  const { tapRunning, registerTap } = cal;
+
   // Let the spacebar register taps during a tap-in session.
   useEffect(() => {
-    if (!open || !cal.tapRunning) return;
+    if (!open || !tapRunning) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         e.preventDefault();
-        cal.registerTap();
+        registerTap();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, cal.tapRunning, cal]);
+  }, [open, tapRunning, registerTap]);
 
   return (
     // shadcn Dialog gives focus-trap, Escape, and backdrop-click-to-close for free
