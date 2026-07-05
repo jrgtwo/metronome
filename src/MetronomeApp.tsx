@@ -1,9 +1,9 @@
-import { lazy, memo, Suspense, useCallback, useState } from 'react';
+import { lazy, Suspense, useCallback, useState } from 'react';
 import { SlidersHorizontal, ArrowLeftRight } from 'lucide-react';
-import { AdSlot as AdSlotBase } from 'adkit';
 import { useMetronome } from '@fretwork/lib';
 import { useTheme } from './theme';
 import { useCenterpieceView } from './centerpieceView';
+import { useDeckExpanded } from './deckState';
 import { usePersistSettings } from './settings';
 import { useUrlState } from './urlState';
 import { Button } from './components/ui/button';
@@ -12,10 +12,9 @@ import { ThemeToggle } from './components/ThemeToggle';
 import { MascotHero } from './components/Mascot';
 import { BeatDots } from './components/BeatDots';
 import { TransportButton } from './components/TransportButton';
-import { BpmControl, TempoReadout } from './components/BpmControl';
-import { TimeSignaturePicker } from './components/TimeSignaturePicker';
-import { FeelControl } from './components/FeelControl';
-import { VolumeControl } from './components/VolumeControl';
+import { MuteButton } from './components/MuteButton';
+import { TempoReadout } from './components/BpmControl';
+import { ControlDeck } from './components/ControlDeck';
 
 // Lazy-loaded: only fetched when first opened, so neither the radix/shadcn Dialog
 // (AboutModal) nor the calibration UI sits in the initial bundle.
@@ -24,20 +23,21 @@ const CalibrationSheet = lazy(() =>
   import('./calibration/CalibrationSheet').then((m) => ({ default: m.CalibrationSheet })),
 );
 
-// Fixed centerpiece height so toggling dots↔mascot doesn't shift the controls
-// below (sized to hold the taller mascot view: number + big mascot).
-const CENTERPIECE_H = 244;
-
-// The footer ad (adkit, third-party) is beat-independent; memo it so the per-tick
-// re-render of MetronomeApp (it reads currentBeat) doesn't re-render the ad. Props
-// are stable strings; it still re-renders on its own context (e.g. entitlement) change.
-const AdSlot = memo(AdSlotBase);
+// Centerpiece height. The pulse grows to fill the freed space when the deck is
+// collapsed, and shrinks back when it expands. Fixed per-state so toggling
+// dots↔mascot within a state doesn't shift the layout.
+const CENTERPIECE_H = 244; // deck expanded
+const CENTERPIECE_H_LG = 340; // deck collapsed — pulse fills the space
 
 /**
  * The whole metronome — one screen. All timing/state comes from the lib's
  * `useMetronome()` hook (which wires the shared store to the engine singleton);
- * this component is just composition + layout. Latency calibration is the one
- * differentiator, behind the gear button.
+ * this component is just composition + layout.
+ *
+ * Layout is "instrument + control deck": the pulse (beat-dots arc / mascot + BPM
+ * number) and transport are the hero up top; every adjustment lives in a docked,
+ * collapsible control deck at the bottom (tempo always shown; meter/feel/swing
+ * revealed on expand). Latency calibration is the differentiator, behind the gear.
  */
 export function MetronomeApp() {
   const m = useMetronome();
@@ -45,12 +45,15 @@ export function MetronomeApp() {
   useUrlState(m); // shareable/bookmarkable URL — a link's params win over saved settings
   const { theme, toggle } = useTheme();
   const { view, toggle: toggleView } = useCenterpieceView();
+  const { expanded, toggle: toggleDeck } = useDeckExpanded();
   const [calOpen, setCalOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   // Stable identity so the memoized TransportButton doesn't re-render every tick.
   // `m.toggle` is a stable store action; alias it so the hook dep is a plain identifier.
   const toggleMetronome = m.toggle;
   const handleToggle = useCallback(() => void toggleMetronome(), [toggleMetronome]);
+  // Pulse is large while the deck is collapsed, so it fills the freed space.
+  const big = !expanded;
 
   return (
     <div className="mx-auto flex min-h-full max-w-lg flex-col px-5 py-4">
@@ -72,17 +75,24 @@ export function MetronomeApp() {
         </div>
       </header>
 
-      {/* Centerpiece — one view at a time: the beat-dots arc OR the beat-eater
-          mascot, with the BPM number always shown. Clicking anywhere on it toggles
-          between the two (a small swap icon in the corner is the affordance — subtle
-          at rest, full on hover/focus). Fixed height so the controls don't shift. */}
-      <main className="flex flex-1 flex-col items-center justify-center gap-4 py-2">
+      {/* Pulse zone (the hero) — one view at a time: the beat-dots arc OR the
+          beat-eater mascot, with the BPM number always shown. A small corner swap
+          button toggles between them (quiet at rest, full on hover/focus). Then the
+          transport: mute beside play. */}
+      <main className="flex flex-1 flex-col items-center justify-center gap-5 py-2">
         <div
-          className="group relative w-full max-w-arc"
-          style={{ height: CENTERPIECE_H }}
+          className="group relative w-full max-w-arc-lg transition-[height] duration-300 ease-out"
+          style={{ height: big ? CENTERPIECE_H_LG : CENTERPIECE_H }}
         >
+          {/* The whole pulse (arc/mascot + number) scales as one unit: full size when
+              the deck is collapsed, scaled down (crisply, never overflowing) when it
+              expands — so the beat markers animate in sync with everything else. */}
           {view === 'dots' ? (
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div
+              className={`absolute inset-0 flex items-center justify-center transition-transform duration-300 ease-out ${
+                big ? 'scale-100' : 'scale-75'
+              }`}
+            >
               <BeatDots
                 beats={m.timeSignature.numerator}
                 accents={m.accents}
@@ -92,13 +102,17 @@ export function MetronomeApp() {
                 currentSubdivisionIndex={m.currentSubdivisionIndex}
                 isRunning={m.isRunning}
               >
-                <TempoReadout bpm={m.bpm} />
+                <TempoReadout bpm={m.bpm} large />
               </BeatDots>
             </div>
           ) : (
             // Mascot view: big mascot on top, BPM number below it (matches the
             // dots view, where the arc sits over the number).
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+            <div
+              className={`absolute inset-0 flex flex-col items-center justify-center gap-3 transition-transform duration-300 ease-out ${
+                big ? 'scale-100' : 'scale-75'
+              }`}
+            >
               <MascotHero
                 bpm={m.bpm}
                 isRunning={m.isRunning}
@@ -108,14 +122,14 @@ export function MetronomeApp() {
                 accentEnabled={m.accentEnabled}
                 subdivision={m.subdivision}
                 currentBeat={m.currentBeat}
-                className="pointer-events-none h-36 w-auto"
+                className="pointer-events-none h-48 w-auto"
               />
-              <TempoReadout bpm={m.bpm} />
+              <TempoReadout bpm={m.bpm} large />
             </div>
           )}
 
-          {/* The only toggle control: a corner swap button. Always present (touch
-              has no hover) but quiet at rest, full-strength on hover/keyboard focus. */}
+          {/* The only view toggle: a corner swap button. Always present (touch has
+              no hover) but quiet at rest, full-strength on hover/keyboard focus. */}
           <button
             type="button"
             onClick={toggleView}
@@ -127,32 +141,29 @@ export function MetronomeApp() {
           </button>
         </div>
 
-        <BpmControl bpm={m.bpm} onChange={m.setBpm} spacebarEnabled={!calOpen && !aboutOpen} />
-
-        <TransportButton isRunning={m.isRunning} onToggle={handleToggle} />
+        <div className="flex items-center gap-4">
+          <MuteButton muted={m.clickMuted} onToggle={m.toggleClickMuted} />
+          <TransportButton isRunning={m.isRunning} onToggle={handleToggle} />
+        </div>
       </main>
 
-      {/* Controls */}
-      <footer className="flex flex-col items-center gap-4 pt-2">
-        <TimeSignaturePicker value={m.timeSignature.id} onChange={m.setTimeSignature} />
-        <FeelControl
-          subdivision={m.subdivision}
-          swing={m.swing}
-          onSubdivision={m.setSubdivision}
-          onSwing={m.setSwing}
-        />
-        <VolumeControl
-          volume={m.volume}
-          muted={m.clickMuted}
-          onVolume={m.setVolume}
-          onToggleMute={m.toggleClickMuted}
-        />
+      {/* Docked control deck — tempo always; meter/feel/swing on expand. */}
+      <ControlDeck
+        expanded={expanded}
+        onToggle={toggleDeck}
+        bpm={m.bpm}
+        onBpm={m.setBpm}
+        spacebarEnabled={!calOpen && !aboutOpen}
+        timeSignatureId={m.timeSignature.id}
+        onTimeSignature={m.setTimeSignature}
+        subdivision={m.subdivision}
+        swing={m.swing}
+        onSubdivision={m.setSubdivision}
+        onSwing={m.setSwing}
+      />
 
-        {/* First adkit consumer: a footer house-ad. Hidden once a future
-            'removeAds' entitlement is granted (no purchase exists yet). */}
-        <AdSlot slot="footer" hideWhenEntitled="removeAds" className="mt-2 w-full max-w-sm text-muted-foreground" />
-
-        {/* Surfaces the crawlable #about-content (index.html) as a modal. */}
+      {/* Surfaces the crawlable #about-content (index.html) as a modal. */}
+      <div className="pt-3 text-center">
         <button
           type="button"
           onClick={() => setAboutOpen(true)}
@@ -160,7 +171,7 @@ export function MetronomeApp() {
         >
           About metronomnom
         </button>
-      </footer>
+      </div>
 
       {/* Gated so the chunk loads on first open, not at startup. */}
       {aboutOpen && (

@@ -10,20 +10,22 @@ const BPM_MAX = 240;
 /** Chunky pushable stepper button, shared by the two tempo steppers. */
 const stepperClass = 'h-10 w-10 shrink-0 text-foreground hover:brightness-95';
 
-/** The hero tempo readout — sits at the center of the beat arc. `compact`
- *  shrinks it when the metronome mascot is enlarged. */
+/** The hero tempo readout — sits at the center of the beat arc. `large` grows it
+ *  when the deck is collapsed (pulse fills the space); `compact` shrinks it. */
 export const TempoReadout = memo(function TempoReadout({
   bpm,
   compact = false,
+  large = false,
 }: {
   bpm: number;
   compact?: boolean;
+  large?: boolean;
 }) {
   return (
     <div className="flex flex-col items-center">
       <span
         className={`font-mono font-semibold leading-none tracking-tight text-beat tabular-nums transition-[font-size] duration-300 ease-out ${
-          compact ? 'text-4xl' : 'text-7xl'
+          compact ? 'text-4xl' : large ? 'text-8xl' : 'text-7xl'
         }`}
       >
         {bpm}

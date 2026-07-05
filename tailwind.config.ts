@@ -64,6 +64,8 @@ const config: Config = {
         'glow-beat-sm': '0 0 10px -3px hsl(var(--beat))',
         // Slider thumb (used by the shadcn Slider).
         thumb: '0 1px 3px hsl(var(--shadow) / 0.8)',
+        // Upward shadow lifting the docked control deck off the screen.
+        deck: '0 -8px 24px -12px hsl(var(--shadow))',
       },
       fontSize: {
         '2xs': '0.625rem', // 10px — eyebrow/overline labels
@@ -80,7 +82,8 @@ const config: Config = {
         thumb: '3px', // slider thumb ring
       },
       maxWidth: {
-        arc: '300px', // beat-arc / readout column
+        arc: '300px', // beat-arc / readout column (deck expanded)
+        'arc-lg': '380px', // larger beat-arc when the deck is collapsed (pulse fills the space)
         'arc-compact': '170px', // arc when the hero is enlarged
       },
       maxHeight: {
