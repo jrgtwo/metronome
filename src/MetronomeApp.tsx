@@ -1,8 +1,9 @@
 import { lazy, memo, Suspense, useCallback, useState } from 'react';
-import { SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal, ArrowLeftRight } from 'lucide-react';
 import { AdSlot as AdSlotBase } from 'adkit';
 import { useMetronome } from '@fretwork/lib';
 import { useTheme } from './theme';
+import { useCenterpieceView } from './centerpieceView';
 import { usePersistSettings } from './settings';
 import { useUrlState } from './urlState';
 import { Button } from './components/ui/button';
@@ -23,6 +24,10 @@ const CalibrationSheet = lazy(() =>
   import('./calibration/CalibrationSheet').then((m) => ({ default: m.CalibrationSheet })),
 );
 
+// Fixed centerpiece height so toggling dots↔mascot doesn't shift the controls
+// below (sized to hold the taller mascot view: number + big mascot).
+const CENTERPIECE_H = 244;
+
 // The footer ad (adkit, third-party) is beat-independent; memo it so the per-tick
 // re-render of MetronomeApp (it reads currentBeat) doesn't re-render the ad. Props
 // are stable strings; it still re-renders on its own context (e.g. entitlement) change.
@@ -39,9 +44,9 @@ export function MetronomeApp() {
   usePersistSettings(m); // restore saved settings on load; save (debounced) on change
   useUrlState(m); // shareable/bookmarkable URL — a link's params win over saved settings
   const { theme, toggle } = useTheme();
+  const { view, toggle: toggleView } = useCenterpieceView();
   const [calOpen, setCalOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
-  const [heroExpanded, setHeroExpanded] = useState(false);
   // Stable identity so the memoized TransportButton doesn't re-render every tick.
   // `m.toggle` is a stable store action; alias it so the hook dep is a plain identifier.
   const toggleMetronome = m.toggle;
@@ -67,53 +72,60 @@ export function MetronomeApp() {
         </div>
       </header>
 
-      {/* Centerpiece — beats arc over the tempo readout, the beat-eater mascot in
-          flow just under it, then the controls. The arc width is capped so the
-          pills stay near the number; the mascot is a normal flow item (pulled up
-          with a negative margin) so it never overlaps the readout or the slider. */}
+      {/* Centerpiece — one view at a time: the beat-dots arc OR the beat-eater
+          mascot, with the BPM number always shown. Clicking anywhere on it toggles
+          between the two (a small swap icon in the corner is the affordance — subtle
+          at rest, full on hover/focus). Fixed height so the controls don't shift. */}
       <main className="flex flex-1 flex-col items-center justify-center gap-4 py-2">
-        {/* Beats arc + tempo readout shrink when the metronome is enlarged, so
-            the emphasis shifts to the metronome without leaving the screen. */}
         <div
-          className={`w-full transition-[max-width] duration-300 ease-out ${
-            heroExpanded ? 'max-w-arc-compact' : 'max-w-arc'
-          }`}
+          className="group relative w-full max-w-arc"
+          style={{ height: CENTERPIECE_H }}
         >
-          <BeatDots
-            beats={m.timeSignature.numerator}
-            accents={m.accents}
-            accentEnabled={m.accentEnabled}
-            currentBeat={m.currentBeat}
-            subdivision={m.subdivision}
-            currentSubdivisionIndex={m.currentSubdivisionIndex}
-            isRunning={m.isRunning}
-          >
-            <TempoReadout bpm={m.bpm} compact={heroExpanded} />
-          </BeatDots>
-        </div>
+          {view === 'dots' ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <BeatDots
+                beats={m.timeSignature.numerator}
+                accents={m.accents}
+                accentEnabled={m.accentEnabled}
+                currentBeat={m.currentBeat}
+                subdivision={m.subdivision}
+                currentSubdivisionIndex={m.currentSubdivisionIndex}
+                isRunning={m.isRunning}
+              >
+                <TempoReadout bpm={m.bpm} />
+              </BeatDots>
+            </div>
+          ) : (
+            // Mascot view: big mascot on top, BPM number below it (matches the
+            // dots view, where the arc sits over the number).
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+              <MascotHero
+                bpm={m.bpm}
+                isRunning={m.isRunning}
+                beats={m.timeSignature.numerator}
+                denominator={m.timeSignature.denominator}
+                accents={m.accents}
+                accentEnabled={m.accentEnabled}
+                subdivision={m.subdivision}
+                currentBeat={m.currentBeat}
+                className="pointer-events-none h-36 w-auto"
+              />
+              <TempoReadout bpm={m.bpm} />
+            </div>
+          )}
 
-        <button
-          type="button"
-          onClick={() => setHeroExpanded((v) => !v)}
-          aria-label={heroExpanded ? 'Shrink metronome' : 'Enlarge metronome'}
-          aria-pressed={heroExpanded}
-          title={heroExpanded ? 'Tap to shrink' : 'Tap to enlarge'}
-          className="-mt-4 rounded-xl transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <MascotHero
-            bpm={m.bpm}
-            isRunning={m.isRunning}
-            beats={m.timeSignature.numerator}
-            denominator={m.timeSignature.denominator}
-            accents={m.accents}
-            accentEnabled={m.accentEnabled}
-            subdivision={m.subdivision}
-            currentBeat={m.currentBeat}
-            className={`pointer-events-none w-auto transition-[height] duration-300 ease-out ${
-              heroExpanded ? 'h-44' : 'h-20'
-            }`}
-          />
-        </button>
+          {/* The only toggle control: a corner swap button. Always present (touch
+              has no hover) but quiet at rest, full-strength on hover/keyboard focus. */}
+          <button
+            type="button"
+            onClick={toggleView}
+            aria-label={view === 'dots' ? 'Show the mascot' : 'Show the beat dots'}
+            title={view === 'dots' ? 'Show the mascot' : 'Show the beat dots'}
+            className="absolute right-1.5 top-1.5 rounded-full bg-card/70 p-1.5 text-muted-foreground opacity-40 transition-opacity duration-200 hover:text-foreground group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ArrowLeftRight className="h-4 w-4" />
+          </button>
+        </div>
 
         <BpmControl bpm={m.bpm} onChange={m.setBpm} spacebarEnabled={!calOpen && !aboutOpen} />
 

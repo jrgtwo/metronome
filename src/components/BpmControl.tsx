@@ -97,7 +97,7 @@ export const BpmControl = memo(function BpmControl({
         className="h-auto gap-1.5 px-4 py-1.5 text-xs text-muted-foreground hover:text-foreground"
       >
         <Hand className="h-3.5 w-3.5" />
-        Tap
+        Tap tempo
       </Button>
     </div>
   );
