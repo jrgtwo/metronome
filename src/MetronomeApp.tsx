@@ -56,7 +56,7 @@ export function MetronomeApp() {
   const big = !expanded;
 
   return (
-    <div className="mx-auto flex min-h-full max-w-lg flex-col px-5 py-4">
+    <div className="mx-auto flex min-h-full max-w-lg flex-col px-5 pt-4">
       {/* Header */}
       <header className="flex items-center justify-between">
         <Wordmark />
@@ -160,18 +160,11 @@ export function MetronomeApp() {
         swing={m.swing}
         onSubdivision={m.setSubdivision}
         onSwing={m.setSwing}
+        onAbout={() => setAboutOpen(true)}
       />
 
-      {/* Surfaces the crawlable #about-content (index.html) as a modal. */}
-      <div className="pt-3 text-center">
-        <button
-          type="button"
-          onClick={() => setAboutOpen(true)}
-          className="text-xs text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
-        >
-          About metronomnom
-        </button>
-      </div>
+      {/* About (crawlable #about-content → modal) is tucked at the bottom of the
+          expanded deck, so the header stays uncluttered and the bottom is the deck. */}
 
       {/* Gated so the chunk loads on first open, not at startup. */}
       {aboutOpen && (

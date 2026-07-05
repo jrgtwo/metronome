@@ -19,6 +19,8 @@ interface ControlDeckProps {
   swing: number;
   onSubdivision: (id: SubdivisionId) => void;
   onSwing: (swing: number) => void;
+  /** Opens the About modal — tucked at the bottom of the expanded deck. */
+  onAbout: () => void;
 }
 
 /**
@@ -38,6 +40,7 @@ export const ControlDeck = memo(function ControlDeck({
   swing,
   onSubdivision,
   onSwing,
+  onAbout,
 }: ControlDeckProps) {
   return (
     // -mx-5 bleeds the deck to the container edges. It stays the page color (so the
@@ -76,7 +79,10 @@ export const ControlDeck = memo(function ControlDeck({
             expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
           }`}
         >
-          <div className="min-h-0 overflow-hidden">
+          {/* justify-end bottom-anchors the content so, as the clipped area grows,
+              the content fills from the bottom up (staying flush above the deck's
+              padding) instead of the bottom sitting empty until the reveal finishes. */}
+          <div className="flex min-h-0 flex-col justify-end overflow-hidden">
             <div className="flex flex-col items-center gap-4 pt-4">
               <div className="h-px w-full bg-border" />
               <TimeSignaturePicker value={timeSignatureId} onChange={onTimeSignature} />
@@ -86,6 +92,13 @@ export const ControlDeck = memo(function ControlDeck({
                 onSubdivision={onSubdivision}
                 onSwing={onSwing}
               />
+              <button
+                type="button"
+                onClick={onAbout}
+                className="mt-1 text-2xs text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+              >
+                About metronomnom
+              </button>
             </div>
           </div>
         </div>
