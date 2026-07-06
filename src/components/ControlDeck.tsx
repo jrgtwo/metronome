@@ -4,6 +4,7 @@ import type { SubdivisionId } from '@fretwork/lib';
 import { BpmControl } from './BpmControl';
 import { TimeSignaturePicker } from './TimeSignaturePicker';
 import { FeelControl } from './FeelControl';
+import { TempoTrainerControl } from './TempoTrainerControl';
 
 interface ControlDeckProps {
   expanded: boolean;
@@ -19,6 +20,16 @@ interface ControlDeckProps {
   swing: number;
   onSubdivision: (id: SubdivisionId) => void;
   onSwing: (swing: number) => void;
+  // Tempo trainer (revealed when expanded)
+  trainerEnabled: boolean;
+  trainerTarget: number;
+  trainerStep: number;
+  trainerInterval: number;
+  onTrainerToggle: () => void;
+  onTrainerTarget: (n: number) => void;
+  onTrainerStep: (n: number) => void;
+  onTrainerInterval: (n: number) => void;
+  trainerJustReached: boolean;
   /** Opens the About modal — tucked at the bottom of the expanded deck. */
   onAbout: () => void;
 }
@@ -40,6 +51,15 @@ export const ControlDeck = memo(function ControlDeck({
   swing,
   onSubdivision,
   onSwing,
+  trainerEnabled,
+  trainerTarget,
+  trainerStep,
+  trainerInterval,
+  onTrainerToggle,
+  onTrainerTarget,
+  onTrainerStep,
+  onTrainerInterval,
+  trainerJustReached,
   onAbout,
 }: ControlDeckProps) {
   return (
@@ -91,6 +111,18 @@ export const ControlDeck = memo(function ControlDeck({
                 swing={swing}
                 onSubdivision={onSubdivision}
                 onSwing={onSwing}
+              />
+              <div className="h-px w-full bg-border" />
+              <TempoTrainerControl
+                enabled={trainerEnabled}
+                target={trainerTarget}
+                step={trainerStep}
+                interval={trainerInterval}
+                onToggle={onTrainerToggle}
+                onTarget={onTrainerTarget}
+                onStep={onTrainerStep}
+                onInterval={onTrainerInterval}
+                justReached={trainerJustReached}
               />
               <button
                 type="button"

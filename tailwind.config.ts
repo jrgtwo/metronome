@@ -96,10 +96,16 @@ const config: Config = {
           '60%': { transform: 'scale(1.06)' },
           '100%': { transform: 'scale(1)' },
         },
+        // Tempo-trainer "reached target" cue on the BPM readout (beat → pop → beat).
+        'bpm-flash': {
+          '0%, 100%': { color: 'hsl(var(--beat))' },
+          '50%': { color: 'hsl(var(--pop))' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 120ms ease-out',
         'beat-pop': 'beat-pop 140ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'bpm-flash': 'bpm-flash 600ms ease-in-out',
       },
     },
   },

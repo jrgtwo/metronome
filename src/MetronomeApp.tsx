@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useState } from 'react';
+import { lazy, Suspense, useCallback, useRef, useState } from 'react';
 import { SlidersHorizontal, ArrowLeftRight } from 'lucide-react';
 import { useMetronome } from '@fretwork/lib';
 import { useTheme } from './theme';
@@ -6,6 +6,7 @@ import { useCenterpieceView } from './centerpieceView';
 import { useDeckExpanded } from './deckState';
 import { usePersistSettings } from './settings';
 import { useUrlState } from './urlState';
+import { useTempoTrainer, type TrainerDriver } from './tempoTrainer';
 import { Button } from './components/ui/button';
 import { Wordmark } from './components/Wordmark';
 import { ThemeToggle } from './components/ThemeToggle';
@@ -40,9 +41,21 @@ const CENTERPIECE_H_LG = 340; // deck collapsed — pulse fills the space
  * revealed on expand). Latency calibration is the differentiator, behind the gear.
  */
 export function MetronomeApp() {
-  const m = useMetronome();
+  // Ref-bridge the engine's bar events into the tempo trainer. The `events` object
+  // is recreated each render (the lib reads handlers through a ref, so that's safe),
+  // and points at the trainer's stable driver — assigned just below, once `trainer`
+  // exists (it can't be referenced here, before it's created).
+  const trainerDriverRef = useRef<TrainerDriver | null>(null);
+  const m = useMetronome({
+    events: {
+      measure: () => trainerDriverRef.current?.onMeasure(),
+      start: () => trainerDriverRef.current?.onStart(),
+    },
+  });
   usePersistSettings(m); // restore saved settings on load; save (debounced) on change
-  useUrlState(m); // shareable/bookmarkable URL — a link's params win over saved settings
+  const trainer = useTempoTrainer(m); // auto-accelerate BPM every N bars (FT-7)
+  trainerDriverRef.current = trainer.driver;
+  useUrlState(m, trainer); // shareable/bookmarkable URL — a link's params win over saved settings
   const { theme, toggle } = useTheme();
   const { view, toggle: toggleView } = useCenterpieceView();
   const { expanded, toggle: toggleDeck } = useDeckExpanded();
@@ -102,7 +115,7 @@ export function MetronomeApp() {
                 currentSubdivisionIndex={m.currentSubdivisionIndex}
                 isRunning={m.isRunning}
               >
-                <TempoReadout bpm={m.bpm} large />
+                <TempoReadout bpm={m.bpm} large flash={trainer.justReached} />
               </BeatDots>
             </div>
           ) : (
@@ -152,7 +165,7 @@ export function MetronomeApp() {
         expanded={expanded}
         onToggle={toggleDeck}
         bpm={m.bpm}
-        onBpm={m.setBpm}
+        onBpm={trainer.handleUserBpm}
         spacebarEnabled={!calOpen && !aboutOpen}
         timeSignatureId={m.timeSignature.id}
         onTimeSignature={m.setTimeSignature}
@@ -160,6 +173,15 @@ export function MetronomeApp() {
         swing={m.swing}
         onSubdivision={m.setSubdivision}
         onSwing={m.setSwing}
+        trainerEnabled={trainer.enabled}
+        trainerTarget={trainer.target}
+        trainerStep={trainer.step}
+        trainerInterval={trainer.interval}
+        onTrainerToggle={trainer.toggleEnabled}
+        onTrainerTarget={trainer.setTarget}
+        onTrainerStep={trainer.setStep}
+        onTrainerInterval={trainer.setInterval}
+        trainerJustReached={trainer.justReached}
         onAbout={() => setAboutOpen(true)}
       />
 

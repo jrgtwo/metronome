@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react';
-import { parseUrlSettings, buildUrlQuery, useUrlState } from './urlState';
+import { parseUrlSettings, buildUrlQuery, parseTrainerUrl, useUrlState } from './urlState';
 
 function makeMockM(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -11,6 +11,16 @@ function makeMockM(overrides: Partial<Record<string, unknown>> = {}) {
     setTimeSignature: vi.fn(),
     setSubdivision: vi.fn(),
     setSwing: vi.fn(),
+    ...overrides,
+  };
+}
+
+function makeMockTrainer(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    target: 140, // TRAINER_DEFAULTS
+    step: 5,
+    interval: 4,
+    applyConfig: vi.fn(),
     ...overrides,
   };
 }
@@ -39,6 +49,21 @@ describe('parseUrlSettings', () => {
   });
 });
 
+describe('parseTrainerUrl', () => {
+  it('reads the trainer config from a query string', () => {
+    expect(parseTrainerUrl('?tt=160&ts=10&ti=8')).toEqual({ target: 160, step: 10, interval: 8 });
+  });
+
+  it('ignores absent and non-numeric params', () => {
+    expect(parseTrainerUrl('?bpm=120')).toEqual({});
+    expect(parseTrainerUrl('?tt=fast&ts=x')).toEqual({});
+  });
+
+  it('keeps only the present, valid params', () => {
+    expect(parseTrainerUrl('?ti=2')).toEqual({ interval: 2 });
+  });
+});
+
 describe('buildUrlQuery', () => {
   const DEFAULTS = { bpm: 120, timeSignatureId: '4/4', subdivision: 'off', swing: 0.5 } as const;
 
@@ -53,6 +78,16 @@ describe('buildUrlQuery', () => {
   it('round-trips through parseUrlSettings', () => {
     const s = { bpm: 140, timeSignatureId: '3/4', subdivision: '8ths', swing: 0.6 } as const;
     expect(parseUrlSettings('?' + buildUrlQuery(s))).toEqual(s);
+  });
+
+  it('omits trainer params at their defaults, includes changed ones', () => {
+    expect(buildUrlQuery(DEFAULTS, { target: 140, step: 5, interval: 4 })).toBe('');
+    expect(buildUrlQuery(DEFAULTS, { target: 160, step: 5, interval: 4 })).toBe('tt=160');
+  });
+
+  it('round-trips trainer config through parseTrainerUrl', () => {
+    const t = { target: 180, step: 3, interval: 2 };
+    expect(parseTrainerUrl('?' + buildUrlQuery(DEFAULTS, t))).toEqual(t);
   });
 });
 
@@ -99,6 +134,27 @@ describe('useUrlState', () => {
       rerender({ m: makeMockM({ bpm: 120 }) });
       vi.advanceTimersByTime(400);
       expect(window.location.search).toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('applies trainer URL params via applyConfig on mount', () => {
+    window.history.replaceState(null, '', '/?tt=160&ts=10&ti=8');
+    const trainer = makeMockTrainer();
+    renderHook(() => useUrlState(makeMockM(), trainer));
+    expect(trainer.applyConfig).toHaveBeenCalledWith({ target: 160, step: 10, interval: 8 });
+  });
+
+  it('mirrors non-default trainer config into the URL (debounced)', () => {
+    vi.useFakeTimers();
+    try {
+      const { rerender } = renderHook(({ trainer }) => useUrlState(makeMockM(), trainer), {
+        initialProps: { trainer: makeMockTrainer({ target: 140 }) },
+      });
+      rerender({ trainer: makeMockTrainer({ target: 170 }) });
+      vi.advanceTimersByTime(400);
+      expect(window.location.search).toBe('?tt=170');
     } finally {
       vi.useRealTimers();
     }

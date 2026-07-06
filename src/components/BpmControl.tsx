@@ -16,17 +16,20 @@ export const TempoReadout = memo(function TempoReadout({
   bpm,
   compact = false,
   large = false,
+  flash = false,
 }: {
   bpm: number;
   compact?: boolean;
   large?: boolean;
+  /** Briefly flash the number (tempo-trainer "reached target" cue). */
+  flash?: boolean;
 }) {
   return (
     <div className="flex flex-col items-center">
       <span
         className={`font-mono font-semibold leading-none tracking-tight text-beat tabular-nums transition-[font-size] duration-300 ease-out ${
           compact ? 'text-4xl' : large ? 'text-8xl' : 'text-7xl'
-        }`}
+        } ${flash ? 'animate-bpm-flash' : ''}`}
       >
         {bpm}
       </span>
