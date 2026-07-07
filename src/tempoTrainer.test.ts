@@ -152,6 +152,7 @@ describe('useTempoTrainer', () => {
     expect(m.setBpm).toHaveBeenCalledExactlyOnceWith(140);
     expect(result.current.enabled).toBe(false); // disarmed on reach
     expect(result.current.justReached).toBe(true);
+    expect(result.current.barsUntilNext).toBeNull(); // counting stops on disarm
 
     act(() => {
       vi.advanceTimersByTime(1000);
@@ -208,6 +209,30 @@ describe('useTempoTrainer', () => {
     expect(m.setBpm).not.toHaveBeenCalled(); // no downward ramp
     expect(result.current.enabled).toBe(false); // silently disarmed
     expect(result.current.justReached).toBe(false); // no cue
+    expect(result.current.barsUntilNext).toBeNull();
+  });
+
+  it('exposes bars-until-next: full window on arm, counting down, reset after a step', () => {
+    const m = makeM({ bpm: 100 }); // interval 4, step 5, target 140
+    const { result } = renderHook(() => useTempoTrainer(m));
+    act(() => result.current.setEnabled(true));
+    expect(result.current.barsUntilNext).toBe(4); // full window on arm
+
+    beat(result, 1);
+    expect(result.current.barsUntilNext).toBe(3);
+    beat(result, 2);
+    expect(result.current.barsUntilNext).toBe(1); // last bar before the bump
+    beat(result, 1); // 4th bar → steps and resets the window
+    expect(m.setBpm).toHaveBeenCalledExactlyOnceWith(105);
+    expect(result.current.barsUntilNext).toBe(4);
+  });
+
+  it('has no bars-until-next while disarmed or stopped', () => {
+    const m = makeM({ isRunning: false });
+    const { result } = renderHook(() => useTempoTrainer(m));
+    expect(result.current.barsUntilNext).toBeNull(); // not armed
+    act(() => result.current.setEnabled(true));
+    expect(result.current.barsUntilNext).toBeNull(); // armed but not playing
   });
 
   it('setters clamp their inputs', () => {

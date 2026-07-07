@@ -130,6 +130,9 @@ export interface TempoTrainerReturn extends TrainerConfig {
   applyConfig: (c: Partial<TrainerConfig>) => void;
   /** True briefly after the ramp reaches its target (drives the cue). */
   justReached: boolean;
+  /** Bars remaining until the next automatic BPM step, counting down `interval`→1,
+   *  or `null` when the trainer isn't actively counting (disarmed or stopped). */
+  barsUntilNext: number | null;
   /** BPM setter for USER gestures — disarms the trainer, then delegates to the engine. */
   handleUserBpm: (bpm: number) => void;
   driver: TrainerDriver;
@@ -148,6 +151,8 @@ export function useTempoTrainer(m: TempoTrainerPort): TempoTrainerReturn {
   );
   const [enabled, setEnabledState] = useState<boolean>(() => stored.enabled ?? false);
   const [justReached, setJustReached] = useState(false);
+  // Bars remaining until the next step (interval..1) while counting; null otherwise.
+  const [barsUntilNext, setBarsUntilNext] = useState<number | null>(null);
 
   // Mirror live values into refs so `driver`/`handleUserBpm` keep a stable identity
   // yet always read current state (the driver is built once, below).
@@ -221,17 +226,29 @@ export function useTempoTrainer(m: TempoTrainerPort): TempoTrainerReturn {
           return;
         }
         barCount.current += 1;
-        if (barCount.current < intervalRef.current) return;
+        if (barCount.current < intervalRef.current) {
+          setBarsUntilNext(intervalRef.current - barCount.current);
+          return;
+        }
         barCount.current = 0;
         const next = nextTrainerBpm(cur, stepRef.current, targetRef.current);
         setBpmRef.current(next);
         if (reachedTarget(next, targetRef.current)) {
-          setEnabledState(false); // reached the goal — disarm
+          setEnabledState(false); // reached the goal — disarm (the effect clears the count)
           fireCue();
+        } else {
+          setBarsUntilNext(intervalRef.current); // full window until the next step
         }
       },
     };
   }
+
+  // Initialize / clear the bars-remaining count on the transitions that start or stop
+  // counting (arm, disarm, play, stop, interval change). Per-bar decrements happen in
+  // the driver above; this only owns the "showing vs hidden + reset to full" edges.
+  useEffect(() => {
+    setBarsUntilNext(enabled && m.isRunning ? interval - barCount.current : null);
+  }, [enabled, m.isRunning, interval]);
 
   // Debounced persistence of config + enabled (skip the first run — values just came
   // from storage/defaults; URL restore, if any, writes after mount).
@@ -257,6 +274,7 @@ export function useTempoTrainer(m: TempoTrainerPort): TempoTrainerReturn {
     toggleEnabled,
     applyConfig,
     justReached,
+    barsUntilNext,
     handleUserBpm,
     driver: driver.current,
   };

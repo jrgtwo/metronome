@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Hand, Minus, Plus } from 'lucide-react';
+import { Hand, Minus, Plus, ChevronsUp } from 'lucide-react';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
 import { useTapTempo } from '../tapTempo';
@@ -17,12 +17,18 @@ export const TempoReadout = memo(function TempoReadout({
   compact = false,
   large = false,
   flash = false,
+  trainerBars = null,
+  trainerStep = 0,
 }: {
   bpm: number;
   compact?: boolean;
   large?: boolean;
   /** Briefly flash the number (tempo-trainer "reached target" cue). */
   flash?: boolean;
+  /** Bars until the trainer's next BPM step; `null` hides the hint (not counting). */
+  trainerBars?: number | null;
+  /** The trainer's step size, shown in the hint (e.g. "+5 in 3 bars"). */
+  trainerStep?: number;
 }) {
   return (
     <div className="flex flex-col items-center">
@@ -36,6 +42,12 @@ export const TempoReadout = memo(function TempoReadout({
       <span className="mt-1 font-mono text-2xs uppercase tracking-label text-muted-foreground">
         BPM
       </span>
+      {trainerBars !== null && (
+        <span className="mt-3 flex items-center gap-1.5 rounded-full bg-pop/10 px-3.5 py-1.5 font-mono text-lg font-semibold tabular-nums text-pop">
+          <ChevronsUp className="h-5 w-5" aria-hidden />
+          +{trainerStep} in {trainerBars} {trainerBars === 1 ? 'bar' : 'bars'}
+        </span>
+      )}
     </div>
   );
 });

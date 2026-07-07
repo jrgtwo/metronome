@@ -115,7 +115,13 @@ export function MetronomeApp() {
                 currentSubdivisionIndex={m.currentSubdivisionIndex}
                 isRunning={m.isRunning}
               >
-                <TempoReadout bpm={m.bpm} large flash={trainer.justReached} />
+                <TempoReadout
+                  bpm={m.bpm}
+                  large
+                  flash={trainer.justReached}
+                  trainerBars={trainer.barsUntilNext}
+                  trainerStep={trainer.step}
+                />
               </BeatDots>
             </div>
           ) : (
