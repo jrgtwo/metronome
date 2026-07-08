@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
- * Tempo trainer (FT-7): while armed and playing, raise BPM by `step` every
- * `interval` bars until it reaches `target`, then hold at target and disarm.
+ * Tempo trainer (FT-7): a mode you flip on. While in trainer mode and playing,
+ * raise BPM by `step` every `interval` bars until it reaches `target`, then hold
+ * at target (staying in the mode) — the metronome keeps playing until the user
+ * stops it.
  *
  * The pure helpers below carry the ramp math + persistence so they unit-test
  * without the audio engine (same split as `settings.ts` / `tapTempo.ts`). The
- * `useTempoTrainer` hook owns arm state, the bar-driven stepper, and the
- * disarm-on-manual-override choke point.
+ * `useTempoTrainer` hook owns the mode flag (`enabled`), the bar-driven stepper,
+ * and the manual-override choke point (a user tempo change re-bases the ramp).
  */
 
 export interface TrainerConfig {
@@ -131,9 +133,11 @@ export interface TempoTrainerReturn extends TrainerConfig {
   /** True briefly after the ramp reaches its target (drives the cue). */
   justReached: boolean;
   /** Bars remaining until the next automatic BPM step, counting down `interval`→1,
-   *  or `null` when the trainer isn't actively counting (disarmed or stopped). */
+   *  or `null` when not actively counting (not in trainer mode, stopped, or holding
+   *  at target). */
   barsUntilNext: number | null;
-  /** BPM setter for USER gestures — disarms the trainer, then delegates to the engine. */
+  /** BPM setter for USER gestures — in trainer mode, re-bases the ramp (stays in the
+   *  mode, resets the bar window), then delegates to the engine. */
   handleUserBpm: (bpm: number) => void;
   driver: TrainerDriver;
 }
@@ -199,12 +203,13 @@ export function useTempoTrainer(m: TempoTrainerPort): TempoTrainerReturn {
     if (c.interval !== undefined) setIntervalState(clampInterval(c.interval));
   }, []);
 
-  // The single BPM choke point for user gestures (slider/steppers/tap/Space). Any
-  // manual tempo change disarms the trainer so it never fights the user; the
-  // trainer's own step calls `setBpm` directly in the driver, so it never disarms
-  // itself (the distinction is structural — different call sites, no flag).
+  // The single BPM choke point for user gestures (slider/steppers/tap/Space). In
+  // trainer mode a manual tempo change re-bases the ramp — it stays in the mode but
+  // resets the bar counter so a full interval elapses at the new tempo before the
+  // next bump (never a mid-interval yank). The trainer's own step calls `setBpm`
+  // directly in the driver, so it doesn't reset itself.
   const handleUserBpm = useCallback((bpm: number) => {
-    if (enabledRef.current) setEnabledState(false);
+    if (enabledRef.current) barCount.current = 0;
     setBpmRef.current(bpm);
   }, []);
 
@@ -219,12 +224,9 @@ export function useTempoTrainer(m: TempoTrainerPort): TempoTrainerReturn {
       onMeasure: () => {
         if (!enabledRef.current || !runningRef.current) return;
         const cur = bpmRef.current;
-        // Target at/below current → nothing to climb: disarm silently (no ramp-down, no cue).
-        if (reachedTarget(cur, targetRef.current)) {
-          barCount.current = 0;
-          setEnabledState(false);
-          return;
-        }
+        // Already at/above target → nothing to climb: hold here, staying in the mode
+        // (no ramp-down, no cue). The effect below hides the countdown chip.
+        if (reachedTarget(cur, targetRef.current)) return;
         barCount.current += 1;
         if (barCount.current < intervalRef.current) {
           setBarsUntilNext(intervalRef.current - barCount.current);
@@ -234,7 +236,9 @@ export function useTempoTrainer(m: TempoTrainerPort): TempoTrainerReturn {
         const next = nextTrainerBpm(cur, stepRef.current, targetRef.current);
         setBpmRef.current(next);
         if (reachedTarget(next, targetRef.current)) {
-          setEnabledState(false); // reached the goal — disarm (the effect clears the count)
+          // Reached the goal — flash the cue and hold at target; stay in the mode so
+          // playback continues until the user stops it. The next measure short-circuits
+          // at the guard above, so the cue fires exactly once.
           fireCue();
         } else {
           setBarsUntilNext(intervalRef.current); // full window until the next step
@@ -244,11 +248,13 @@ export function useTempoTrainer(m: TempoTrainerPort): TempoTrainerReturn {
   }
 
   // Initialize / clear the bars-remaining count on the transitions that start or stop
-  // counting (arm, disarm, play, stop, interval change). Per-bar decrements happen in
-  // the driver above; this only owns the "showing vs hidden + reset to full" edges.
+  // counting: entering/leaving the mode, play/stop, interval change, reaching target
+  // (hide the chip), or a manual re-base (bpm change → reset to the full window).
+  // Per-bar decrements happen in the driver above.
   useEffect(() => {
-    setBarsUntilNext(enabled && m.isRunning ? interval - barCount.current : null);
-  }, [enabled, m.isRunning, interval]);
+    const counting = enabled && m.isRunning && !reachedTarget(m.bpm, target);
+    setBarsUntilNext(counting ? interval - barCount.current : null);
+  }, [enabled, m.isRunning, interval, m.bpm, target]);
 
   // Debounced persistence of config + enabled (skip the first run — values just came
   // from storage/defaults; URL restore, if any, writes after mount).

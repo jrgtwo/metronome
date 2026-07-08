@@ -4,11 +4,12 @@ import { TRAINER_DEFAULTS, type TrainerConfig } from './tempoTrainer';
 
 /**
  * Shareable / bookmarkable URL state (FT-12). The *musical* setup — bpm, meter,
- * subdivision, swing — plus the tempo-trainer config (target/step/interval) is
- * mirrored to the query string so a link reproduces it (teacher → student).
- * Personal settings (volume/mute) and the trainer's armed flag stay out of the URL.
+ * subdivision, swing — is mirrored to the query string so a link reproduces it
+ * (teacher → student). The tempo trainer rides along **only while its mode is on**
+ * (`tr=1` + its config `tt`/`ts`/`ti`); when off, no trainer params appear (an
+ * inactive trainer's config is just bloat). Personal settings (volume/mute) stay out.
  *
- * Wire format uses short keys: `bpm`, `sig`, `sub`, `swing`, `tt`, `ts`, `ti`.
+ * Wire format uses short keys: `bpm`, `sig`, `sub`, `swing`, `tr`, `tt`, `ts`, `ti`.
  */
 export interface UrlSettings {
   bpm: number;
@@ -31,15 +32,21 @@ export const TRAINER_URL_DEFAULTS: TrainerConfig = TRAINER_DEFAULTS;
 const SUBDIVISIONS: readonly string[] = ['off', '8ths', 'triplets', '16ths', 'sextuplets'];
 
 /** Build a query string containing only settings that differ from the defaults
- *  (so an untouched app keeps a clean, param-free URL). No leading `?`. The
- *  trainer config is appended (keys `tt`/`ts`/`ti`) when provided. */
-export function buildUrlQuery(s: UrlSettings, trainer?: TrainerConfig): string {
+ *  (so an untouched app keeps a clean, param-free URL). No leading `?`. The trainer
+ *  rides along **only while its mode is on** (`tr=1` plus any non-default
+ *  `tt`/`ts`/`ti`) — an inactive trainer's config is just URL bloat, so it's omitted. */
+export function buildUrlQuery(
+  s: UrlSettings,
+  trainer?: TrainerConfig,
+  trainerEnabled?: boolean,
+): string {
   const p = new URLSearchParams();
   if (s.bpm !== URL_DEFAULTS.bpm) p.set('bpm', String(s.bpm));
   if (s.timeSignatureId !== URL_DEFAULTS.timeSignatureId) p.set('sig', s.timeSignatureId);
   if (s.subdivision !== URL_DEFAULTS.subdivision) p.set('sub', s.subdivision);
   if (s.swing !== URL_DEFAULTS.swing) p.set('swing', String(s.swing));
-  if (trainer) {
+  if (trainer && trainerEnabled) {
+    p.set('tr', '1');
     if (trainer.target !== TRAINER_URL_DEFAULTS.target) p.set('tt', String(trainer.target));
     if (trainer.step !== TRAINER_URL_DEFAULTS.step) p.set('ts', String(trainer.step));
     if (trainer.interval !== TRAINER_URL_DEFAULTS.interval) p.set('ti', String(trainer.interval));
@@ -61,12 +68,14 @@ export interface UrlStatePort {
   setSwing: (swing: number) => void;
 }
 
-/** The `useTempoTrainer()` slice this hook reads + writes (config only, no armed flag). */
+/** The `useTempoTrainer()` slice this hook reads + writes (config + the mode flag). */
 export interface TrainerUrlPort {
   target: number;
   step: number;
   interval: number;
+  enabled: boolean;
   applyConfig: (c: Partial<TrainerConfig>) => void;
+  setEnabled: (v: boolean) => void;
 }
 
 /**
@@ -87,7 +96,11 @@ export function useUrlState(m: UrlStatePort, trainer?: TrainerUrlPort): void {
     if (s.bpm !== undefined) m.setBpm(s.bpm);
     if (s.subdivision !== undefined) m.setSubdivision(s.subdivision);
     if (s.swing !== undefined) m.setSwing(s.swing);
-    if (trainer) trainer.applyConfig(parseTrainerUrl(window.location.search));
+    if (trainer) {
+      trainer.applyConfig(parseTrainerUrl(window.location.search));
+      const en = parseTrainerEnabled(window.location.search);
+      if (en !== undefined) trainer.setEnabled(en);
+    }
     applied.current = true;
     // Run exactly once on mount; the setters are stable store/hook actions.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -98,6 +111,7 @@ export function useUrlState(m: UrlStatePort, trainer?: TrainerUrlPort): void {
   const tTarget = trainer?.target;
   const tStep = trainer?.step;
   const tInterval = trainer?.interval;
+  const tEnabled = trainer?.enabled;
 
   useEffect(() => {
     if (!applied.current) return;
@@ -113,13 +127,14 @@ export function useUrlState(m: UrlStatePort, trainer?: TrainerUrlPort): void {
         swing: m.swing,
       },
       trainerCfg,
+      tEnabled,
     );
     const id = setTimeout(() => {
       const url = window.location.pathname + (query ? `?${query}` : '') + window.location.hash;
       window.history.replaceState(null, '', url);
     }, URL_SYNC_DEBOUNCE_MS);
     return () => clearTimeout(id);
-  }, [m.bpm, m.timeSignature.id, m.subdivision, m.swing, tTarget, tStep, tInterval]);
+  }, [m.bpm, m.timeSignature.id, m.subdivision, m.swing, tTarget, tStep, tInterval, tEnabled]);
 }
 
 function num(raw: string | null): number | undefined {
@@ -155,4 +170,11 @@ export function parseTrainerUrl(search: string): Partial<TrainerConfig> {
   const interval = num(p.get('ti'));
   if (interval !== undefined) out.interval = interval;
   return out;
+}
+
+/** Read the trainer mode flag (`tr=1`) from a query string. Returns `true` when
+ *  present, else `undefined` (absent means "leave as-is", matching the other
+ *  params — `tr` is only ever emitted when on, so off keeps the URL clean). */
+export function parseTrainerEnabled(search: string): boolean | undefined {
+  return new URLSearchParams(search).get('tr') === '1' ? true : undefined;
 }

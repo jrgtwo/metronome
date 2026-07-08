@@ -1,18 +1,16 @@
 import { memo } from 'react';
 import clsx from 'clsx';
-import { Power, Minus, Plus } from 'lucide-react';
+import { Minus, Plus } from 'lucide-react';
 import { Button } from './ui/button';
 
-interface TempoTrainerControlProps {
-  enabled: boolean;
+interface TrainerBarProps {
   target: number;
   step: number;
   interval: number;
-  onToggle: () => void;
   onTarget: (n: number) => void;
   onStep: (n: number) => void;
   onInterval: (n: number) => void;
-  /** True briefly after the ramp reaches its target — highlights the row. */
+  /** True briefly after the ramp reaches its target — highlights the bar. */
   justReached: boolean;
 }
 
@@ -62,48 +60,32 @@ const Stepper = memo(function Stepper({
 });
 
 /**
- * The tempo-trainer row in the expanded control deck: an arm toggle plus Target /
- * Step / Bars steppers. When armed and playing, the app ramps BPM up by `step`
- * every `interval` bars until it reaches `target`. Purely presentational — all
- * state + the bar-driven stepping live in `useTempoTrainer`.
+ * The tempo-trainer bar — appears between the transport and the control deck while
+ * trainer mode is on (entered/exited by the transport-side `TrainerButton`). Holds
+ * the Target / Step / Bars steppers; while playing, the app ramps BPM up by `step`
+ * every `interval` bars until it reaches `target`, then holds. Purely presentational
+ * — all state + the bar-driven stepping live in `useTempoTrainer`.
  */
-export const TempoTrainerControl = memo(function TempoTrainerControl({
-  enabled,
+export const TrainerBar = memo(function TrainerBar({
   target,
   step,
   interval,
-  onToggle,
   onTarget,
   onStep,
   onInterval,
   justReached,
-}: TempoTrainerControlProps) {
+}: TrainerBarProps) {
   return (
     <div
       className={clsx(
-        'flex w-full flex-col items-center gap-2 rounded-xl px-2 py-1 transition-[background-color,box-shadow] duration-300',
+        'mx-auto flex items-center justify-center gap-x-4 rounded-xl border border-border bg-card px-4 py-2 transition-[background-color,box-shadow] duration-300',
         justReached && 'bg-pop/10 ring-2 ring-pop',
       )}
     >
-      <span className="font-mono text-2xs uppercase tracking-label text-muted-foreground">
-        Tempo trainer
-      </span>
-      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
-        <Button
-          type="button"
-          variant="3d"
-          size="icon"
-          onClick={onToggle}
-          aria-label={enabled ? 'Disable tempo trainer' : 'Enable tempo trainer'}
-          aria-pressed={enabled}
-          className={clsx('h-10 w-10', enabled ? 'text-pop' : 'text-muted-foreground hover:text-foreground')}
-        >
-          <Power className="h-4 w-4" />
-        </Button>
-        <Stepper label="Target" unit="target tempo" value={target} onChange={onTarget} />
-        <Stepper label="Step" unit="step size" value={step} onChange={onStep} />
-        <Stepper label="Bars" unit="bar interval" value={interval} onChange={onInterval} />
-      </div>
+      <span className="font-mono text-2xs uppercase tracking-label text-muted-foreground">Trainer</span>
+      <Stepper label="Target" unit="target tempo" value={target} onChange={onTarget} />
+      <Stepper label="Step" unit="step size" value={step} onChange={onStep} />
+      <Stepper label="Bars" unit="bar interval" value={interval} onChange={onInterval} />
     </div>
   );
 });

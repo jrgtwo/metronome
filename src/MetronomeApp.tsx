@@ -14,8 +14,10 @@ import { MascotHero } from './components/Mascot';
 import { BeatDots } from './components/BeatDots';
 import { TransportButton } from './components/TransportButton';
 import { MuteButton } from './components/MuteButton';
+import { TrainerButton } from './components/TrainerButton';
 import { TempoReadout } from './components/BpmControl';
 import { ControlDeck } from './components/ControlDeck';
+import { TrainerBar } from './components/TrainerBar';
 
 // Lazy-loaded: only fetched when first opened, so neither the radix/shadcn Dialog
 // (AboutModal) nor the calibration UI sits in the initial bundle.
@@ -143,7 +145,13 @@ export function MetronomeApp() {
                 currentBeat={m.currentBeat}
                 className="pointer-events-none h-48 w-auto"
               />
-              <TempoReadout bpm={m.bpm} large />
+              <TempoReadout
+                bpm={m.bpm}
+                large
+                flash={trainer.justReached}
+                trainerBars={trainer.barsUntilNext}
+                trainerStep={trainer.step}
+              />
             </div>
           )}
 
@@ -163,8 +171,25 @@ export function MetronomeApp() {
         <div className="flex items-center gap-4">
           <MuteButton muted={m.clickMuted} onToggle={m.toggleClickMuted} />
           <TransportButton isRunning={m.isRunning} onToggle={handleToggle} />
+          <TrainerButton active={trainer.enabled} onToggle={trainer.toggleEnabled} />
         </div>
       </main>
+
+      {/* Tempo-trainer mode: the bar appears between the transport and the deck while
+          trainer mode is on (toggled by the TrainerButton above). */}
+      {trainer.enabled && (
+        <div className="mb-3 flex justify-center">
+          <TrainerBar
+            target={trainer.target}
+            step={trainer.step}
+            interval={trainer.interval}
+            onTarget={trainer.setTarget}
+            onStep={trainer.setStep}
+            onInterval={trainer.setInterval}
+            justReached={trainer.justReached}
+          />
+        </div>
+      )}
 
       {/* Docked control deck — tempo always; meter/feel/swing on expand. */}
       <ControlDeck
@@ -179,15 +204,6 @@ export function MetronomeApp() {
         swing={m.swing}
         onSubdivision={m.setSubdivision}
         onSwing={m.setSwing}
-        trainerEnabled={trainer.enabled}
-        trainerTarget={trainer.target}
-        trainerStep={trainer.step}
-        trainerInterval={trainer.interval}
-        onTrainerToggle={trainer.toggleEnabled}
-        onTrainerTarget={trainer.setTarget}
-        onTrainerStep={trainer.setStep}
-        onTrainerInterval={trainer.setInterval}
-        trainerJustReached={trainer.justReached}
         onAbout={() => setAboutOpen(true)}
       />
 

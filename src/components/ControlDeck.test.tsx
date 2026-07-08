@@ -14,15 +14,6 @@ const base = {
   swing: 0.5,
   onSubdivision: vi.fn(),
   onSwing: vi.fn(),
-  trainerEnabled: false,
-  trainerTarget: 140,
-  trainerStep: 5,
-  trainerInterval: 4,
-  onTrainerToggle: vi.fn(),
-  onTrainerTarget: vi.fn(),
-  onTrainerStep: vi.fn(),
-  onTrainerInterval: vi.fn(),
-  trainerJustReached: false,
   onAbout: vi.fn(),
 };
 
@@ -48,12 +39,6 @@ describe('ControlDeck', () => {
     render(<ControlDeck expanded onToggle={vi.fn()} {...base} />);
     expect(screen.getByText('4/4')).toBeInTheDocument(); // a meter option
     expect(screen.getByText('Off')).toBeInTheDocument(); // a feel option
-  });
-
-  it('renders the tempo trainer row', () => {
-    render(<ControlDeck expanded onToggle={vi.fn()} {...base} />);
-    expect(screen.getByText('Tempo trainer')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Enable tempo trainer' })).toBeInTheDocument();
   });
 
   it('opens About via the onAbout callback', () => {

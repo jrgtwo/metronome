@@ -1,5 +1,11 @@
 import { renderHook } from '@testing-library/react';
-import { parseUrlSettings, buildUrlQuery, parseTrainerUrl, useUrlState } from './urlState';
+import {
+  parseUrlSettings,
+  buildUrlQuery,
+  parseTrainerUrl,
+  parseTrainerEnabled,
+  useUrlState,
+} from './urlState';
 
 function makeMockM(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -20,7 +26,9 @@ function makeMockTrainer(overrides: Partial<Record<string, unknown>> = {}) {
     target: 140, // TRAINER_DEFAULTS
     step: 5,
     interval: 4,
+    enabled: false,
     applyConfig: vi.fn(),
+    setEnabled: vi.fn(),
     ...overrides,
   };
 }
@@ -64,6 +72,19 @@ describe('parseTrainerUrl', () => {
   });
 });
 
+describe('parseTrainerEnabled', () => {
+  it('reads the mode flag (tr=1) when present', () => {
+    expect(parseTrainerEnabled('?tr=1')).toBe(true);
+    expect(parseTrainerEnabled('?bpm=120&tr=1')).toBe(true);
+  });
+
+  it('is undefined when absent (leave as-is) or not exactly 1', () => {
+    expect(parseTrainerEnabled('')).toBeUndefined();
+    expect(parseTrainerEnabled('?bpm=120')).toBeUndefined();
+    expect(parseTrainerEnabled('?tr=0')).toBeUndefined();
+  });
+});
+
 describe('buildUrlQuery', () => {
   const DEFAULTS = { bpm: 120, timeSignatureId: '4/4', subdivision: 'off', swing: 0.5 } as const;
 
@@ -80,14 +101,19 @@ describe('buildUrlQuery', () => {
     expect(parseUrlSettings('?' + buildUrlQuery(s))).toEqual(s);
   });
 
-  it('omits trainer params at their defaults, includes changed ones', () => {
-    expect(buildUrlQuery(DEFAULTS, { target: 140, step: 5, interval: 4 })).toBe('');
-    expect(buildUrlQuery(DEFAULTS, { target: 160, step: 5, interval: 4 })).toBe('tt=160');
+  it('omits all trainer params while the mode is off (even with non-default config)', () => {
+    expect(buildUrlQuery(DEFAULTS, { target: 160, step: 10, interval: 8 })).toBe('');
+    expect(buildUrlQuery(DEFAULTS, { target: 160, step: 10, interval: 8 }, false)).toBe('');
   });
 
-  it('round-trips trainer config through parseTrainerUrl', () => {
+  it('emits tr=1 plus only the changed knobs while the mode is on', () => {
+    expect(buildUrlQuery(DEFAULTS, { target: 140, step: 5, interval: 4 }, true)).toBe('tr=1');
+    expect(buildUrlQuery(DEFAULTS, { target: 160, step: 5, interval: 4 }, true)).toBe('tr=1&tt=160');
+  });
+
+  it('round-trips trainer config through parseTrainerUrl (mode on)', () => {
     const t = { target: 180, step: 3, interval: 2 };
-    expect(parseTrainerUrl('?' + buildUrlQuery(DEFAULTS, t))).toEqual(t);
+    expect(parseTrainerUrl('?' + buildUrlQuery(DEFAULTS, t, true))).toEqual(t);
   });
 });
 
@@ -139,22 +165,45 @@ describe('useUrlState', () => {
     }
   });
 
-  it('applies trainer URL params via applyConfig on mount', () => {
-    window.history.replaceState(null, '', '/?tt=160&ts=10&ti=8');
+  it('applies trainer config + the mode flag on mount', () => {
+    window.history.replaceState(null, '', '/?tr=1&tt=160&ts=10&ti=8');
     const trainer = makeMockTrainer();
     renderHook(() => useUrlState(makeMockM(), trainer));
     expect(trainer.applyConfig).toHaveBeenCalledWith({ target: 160, step: 10, interval: 8 });
+    expect(trainer.setEnabled).toHaveBeenCalledWith(true);
   });
 
-  it('mirrors non-default trainer config into the URL (debounced)', () => {
+  it('leaves the mode flag untouched on mount when tr is absent', () => {
+    window.history.replaceState(null, '', '/?bpm=140');
+    const trainer = makeMockTrainer();
+    renderHook(() => useUrlState(makeMockM({ bpm: 140 }), trainer));
+    expect(trainer.setEnabled).not.toHaveBeenCalled();
+  });
+
+  it('mirrors an active trainer into the URL (tr=1 + changed knobs, debounced)', () => {
     vi.useFakeTimers();
     try {
       const { rerender } = renderHook(({ trainer }) => useUrlState(makeMockM(), trainer), {
-        initialProps: { trainer: makeMockTrainer({ target: 140 }) },
+        initialProps: { trainer: makeMockTrainer({ enabled: true, target: 140 }) },
       });
-      rerender({ trainer: makeMockTrainer({ target: 170 }) });
+      rerender({ trainer: makeMockTrainer({ enabled: true, target: 170 }) });
       vi.advanceTimersByTime(400);
-      expect(window.location.search).toBe('?tt=170');
+      expect(window.location.search).toBe('?tr=1&tt=170');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('strips trainer params from the URL when the mode is turned off', () => {
+    vi.useFakeTimers();
+    try {
+      window.history.replaceState(null, '', '/?tr=1&tt=170');
+      const { rerender } = renderHook(({ trainer }) => useUrlState(makeMockM(), trainer), {
+        initialProps: { trainer: makeMockTrainer({ enabled: true, target: 170 }) },
+      });
+      rerender({ trainer: makeMockTrainer({ enabled: false, target: 170 }) });
+      vi.advanceTimersByTime(400);
+      expect(window.location.search).toBe('');
     } finally {
       vi.useRealTimers();
     }

@@ -140,24 +140,57 @@ describe('useTempoTrainer', () => {
     expect(m.setBpm).toHaveBeenCalledExactlyOnceWith(105);
   });
 
-  it('holds at target, disarms, and flashes the cue (auto-clearing)', () => {
-    const m = makeM({ bpm: 138 });
-    const { result } = renderHook(() => useTempoTrainer(m));
+  it('reaches target: flashes the cue, holds, and stays in trainer mode (no auto-exit, no repeat cue)', () => {
+    const setBpm = vi.fn();
+    const { result, rerender } = renderHook((p: TempoTrainerPort) => useTempoTrainer(p), {
+      initialProps: makeM({ bpm: 138, setBpm }),
+    });
     act(() => {
       result.current.setInterval(1);
       result.current.setEnabled(true);
     });
 
     beat(result, 1); // 138 + 5 → clamped to target 140
-    expect(m.setBpm).toHaveBeenCalledExactlyOnceWith(140);
-    expect(result.current.enabled).toBe(false); // disarmed on reach
-    expect(result.current.justReached).toBe(true);
-    expect(result.current.barsUntilNext).toBeNull(); // counting stops on disarm
+    expect(setBpm).toHaveBeenCalledExactlyOnceWith(140);
+    expect(result.current.enabled).toBe(true); // stays in trainer mode
+    expect(result.current.justReached).toBe(true); // cue fires
+
+    // The engine applies the new tempo; the trainer now holds at target.
+    act(() => rerender(makeM({ bpm: 140, setBpm })));
+    expect(result.current.barsUntilNext).toBeNull(); // chip hidden while holding
 
     act(() => {
       vi.advanceTimersByTime(1000);
     });
+    expect(result.current.justReached).toBe(false); // cue auto-clears
+
+    // Further measures hold: no more steps, and the cue does not re-fire.
+    beat(result, 3);
+    expect(setBpm).toHaveBeenCalledTimes(1);
     expect(result.current.justReached).toBe(false);
+  });
+
+  it('re-bases the ramp on a manual tempo change without leaving the mode', () => {
+    const setBpm = vi.fn();
+    const { result, rerender } = renderHook((p: TempoTrainerPort) => useTempoTrainer(p), {
+      initialProps: makeM({ bpm: 130, setBpm }),
+    });
+    act(() => result.current.setEnabled(true)); // target 140, step 5, interval 4
+
+    beat(result, 4); // bar 4 → step 130 → 135
+    expect(setBpm).toHaveBeenCalledExactlyOnceWith(135);
+    act(() => rerender(makeM({ bpm: 135, setBpm }))); // engine applies the step
+
+    act(() => result.current.handleUserBpm(110)); // user nudges down — re-base, stay in mode
+    expect(result.current.enabled).toBe(true);
+    expect(setBpm).toHaveBeenLastCalledWith(110);
+    act(() => rerender(makeM({ bpm: 110, setBpm }))); // engine applies the nudge
+
+    expect(result.current.barsUntilNext).toBe(4); // full window again after the re-base
+    beat(result, 3);
+    expect(setBpm).toHaveBeenCalledTimes(2); // counter reset — no step yet
+    beat(result, 1); // 4th bar after the re-base
+    expect(setBpm).toHaveBeenLastCalledWith(115); // 110 → 115
   });
 
   it('does nothing when disarmed', () => {
@@ -188,28 +221,28 @@ describe('useTempoTrainer', () => {
     expect(m.setBpm).toHaveBeenCalledExactlyOnceWith(105);
   });
 
-  it('handleUserBpm disarms the trainer and passes the value through', () => {
+  it('handleUserBpm re-bases (stays in trainer mode) and passes the value through', () => {
     const m = makeM();
     const { result } = renderHook(() => useTempoTrainer(m));
     act(() => result.current.setEnabled(true));
     act(() => result.current.handleUserBpm(155));
-    expect(result.current.enabled).toBe(false);
+    expect(result.current.enabled).toBe(true); // stays in trainer mode
     expect(m.setBpm).toHaveBeenCalledExactlyOnceWith(155);
   });
 
-  it('disarms silently (no ramp-down, no cue) when the target is at/below current', () => {
+  it('holds silently (no ramp-down, no cue) when the target is at/below current, staying in mode', () => {
     const m = makeM({ bpm: 100 });
     const { result } = renderHook(() => useTempoTrainer(m));
     act(() => {
       result.current.setInterval(1);
-      result.current.setEnabled(true); // armed with default target 140 (> 100)
+      result.current.setEnabled(true); // mode on with default target 140 (> 100)
     });
-    act(() => result.current.setTarget(90)); // now target < current, still armed
+    act(() => result.current.setTarget(90)); // now target < current
     beat(result, 1);
     expect(m.setBpm).not.toHaveBeenCalled(); // no downward ramp
-    expect(result.current.enabled).toBe(false); // silently disarmed
+    expect(result.current.enabled).toBe(true); // stays in the mode
     expect(result.current.justReached).toBe(false); // no cue
-    expect(result.current.barsUntilNext).toBeNull();
+    expect(result.current.barsUntilNext).toBeNull(); // holding — chip hidden
   });
 
   it('exposes bars-until-next: full window on arm, counting down, reset after a step', () => {
