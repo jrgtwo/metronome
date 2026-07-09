@@ -176,6 +176,12 @@ export function useTempoTrainer(m: TempoTrainerPort): TempoTrainerReturn {
   intervalRef.current = interval;
 
   const barCount = useRef(0);
+  // The `measure` event fires on the downbeat of *every* bar, including the opening
+  // one the moment playback starts. That first downbeat is the cycle baseline (0 bars
+  // elapsed), not a completed bar — so we skip counting it. Set on arm / start /
+  // re-base; consumed by the next measure. (Later cycles get this for free: a bump
+  // resets the count *at* a downbeat, so that downbeat isn't re-counted.)
+  const pendingBaseline = useRef(false);
   const cueTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fireCue = useCallback(() => {
@@ -192,7 +198,10 @@ export function useTempoTrainer(m: TempoTrainerPort): TempoTrainerReturn {
   const setInterval = useCallback((n: number) => setIntervalState(clampInterval(n)), []);
 
   const setEnabled = useCallback((v: boolean) => {
-    if (v) barCount.current = 0; // counting starts when the trainer begins driving
+    if (v) {
+      barCount.current = 0; // counting starts when the trainer begins driving
+      pendingBaseline.current = true; // ...from the next downbeat, not the current bar
+    }
     setEnabledState(v);
   }, []);
   const toggleEnabled = useCallback(() => setEnabled(!enabledRef.current), [setEnabled]);
@@ -209,7 +218,10 @@ export function useTempoTrainer(m: TempoTrainerPort): TempoTrainerReturn {
   // next bump (never a mid-interval yank). The trainer's own step calls `setBpm`
   // directly in the driver, so it doesn't reset itself.
   const handleUserBpm = useCallback((bpm: number) => {
-    if (enabledRef.current) barCount.current = 0;
+    if (enabledRef.current) {
+      barCount.current = 0;
+      pendingBaseline.current = true; // a full interval elapses at the new tempo first
+    }
     setBpmRef.current(bpm);
   }, []);
 
@@ -220,6 +232,7 @@ export function useTempoTrainer(m: TempoTrainerPort): TempoTrainerReturn {
     driver.current = {
       onStart: () => {
         barCount.current = 0;
+        pendingBaseline.current = true; // ...counted from the first full bar after play
       },
       onMeasure: () => {
         if (!enabledRef.current || !runningRef.current) return;
@@ -227,6 +240,12 @@ export function useTempoTrainer(m: TempoTrainerPort): TempoTrainerReturn {
         // Already at/above target → nothing to climb: hold here, staying in the mode
         // (no ramp-down, no cue). The effect below hides the countdown chip.
         if (reachedTarget(cur, targetRef.current)) return;
+        // The opening downbeat of a cycle is the baseline — don't count it as a bar.
+        if (pendingBaseline.current) {
+          pendingBaseline.current = false;
+          setBarsUntilNext(intervalRef.current);
+          return;
+        }
         barCount.current += 1;
         if (barCount.current < intervalRef.current) {
           setBarsUntilNext(intervalRef.current - barCount.current);

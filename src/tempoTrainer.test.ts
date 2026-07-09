@@ -129,15 +129,35 @@ describe('useTempoTrainer', () => {
     expect(result.current.enabled).toBe(true);
   });
 
-  it('steps BPM up exactly on the Nth bar, not before', () => {
+  it('steps BPM up after a full interval of bars, not before', () => {
     const m = makeM({ bpm: 100 }); // defaults: target 140, step 5, interval 4
     const { result } = renderHook(() => useTempoTrainer(m));
     act(() => result.current.setEnabled(true));
 
-    beat(result, 3);
+    beat(result, 4); // baseline downbeat + 3 counted bars
     expect(m.setBpm).not.toHaveBeenCalled();
-    beat(result, 1); // 4th bar
+    beat(result, 1); // 4th full bar → first bump
     expect(m.setBpm).toHaveBeenCalledExactlyOnceWith(105);
+  });
+
+  it('waits a full interval on the opening cycle — no off-by-one on the first bar', () => {
+    // Regression: the `measure` event fires on the opening downbeat too, which used to
+    // be miscounted as a whole bar, so the first bump landed after only 3 bars (not 4).
+    const m = makeM({ bpm: 100 }); // interval 4
+    const { result } = renderHook(() => useTempoTrainer(m));
+    act(() => result.current.setEnabled(true));
+    act(() => result.current.driver.onStart()); // press play
+
+    beat(result, 4); // opening downbeat (baseline) + 3 bars → no bump yet
+    expect(m.setBpm).not.toHaveBeenCalled();
+    beat(result, 1); // 4th full bar → first bump
+    expect(m.setBpm).toHaveBeenCalledTimes(1);
+
+    // ...and the second cycle is also a full 4 bars, not 3.
+    beat(result, 3);
+    expect(m.setBpm).toHaveBeenCalledTimes(1);
+    beat(result, 1);
+    expect(m.setBpm).toHaveBeenCalledTimes(2);
   });
 
   it('reaches target: flashes the cue, holds, and stays in trainer mode (no auto-exit, no repeat cue)', () => {
@@ -150,7 +170,7 @@ describe('useTempoTrainer', () => {
       result.current.setEnabled(true);
     });
 
-    beat(result, 1); // 138 + 5 → clamped to target 140
+    beat(result, 2); // baseline + 1st bar (interval 1): 138 + 5 → clamped to target 140
     expect(setBpm).toHaveBeenCalledExactlyOnceWith(140);
     expect(result.current.enabled).toBe(true); // stays in trainer mode
     expect(result.current.justReached).toBe(true); // cue fires
@@ -177,7 +197,7 @@ describe('useTempoTrainer', () => {
     });
     act(() => result.current.setEnabled(true)); // target 140, step 5, interval 4
 
-    beat(result, 4); // bar 4 → step 130 → 135
+    beat(result, 5); // baseline + 4 bars → step 130 → 135
     expect(setBpm).toHaveBeenCalledExactlyOnceWith(135);
     act(() => rerender(makeM({ bpm: 135, setBpm }))); // engine applies the step
 
@@ -187,9 +207,9 @@ describe('useTempoTrainer', () => {
     act(() => rerender(makeM({ bpm: 110, setBpm }))); // engine applies the nudge
 
     expect(result.current.barsUntilNext).toBe(4); // full window again after the re-base
-    beat(result, 3);
-    expect(setBpm).toHaveBeenCalledTimes(2); // counter reset — no step yet
-    beat(result, 1); // 4th bar after the re-base
+    beat(result, 4); // baseline + 3 bars → no step yet
+    expect(setBpm).toHaveBeenCalledTimes(2); // counter reset — just the earlier 135 + 110
+    beat(result, 1); // 4th full bar after the re-base
     expect(setBpm).toHaveBeenLastCalledWith(115); // 110 → 115
   });
 
@@ -213,11 +233,11 @@ describe('useTempoTrainer', () => {
     const { result } = renderHook(() => useTempoTrainer(m));
     act(() => result.current.setEnabled(true));
 
-    beat(result, 3); // count = 3
-    act(() => result.current.driver.onStart()); // reset → count = 0
-    beat(result, 3);
-    expect(m.setBpm).not.toHaveBeenCalled(); // only 3 since reset
-    beat(result, 1); // 4th after reset
+    beat(result, 3); // some bars in
+    act(() => result.current.driver.onStart()); // restart → counter + baseline reset
+    beat(result, 4); // baseline + 3 bars since the restart — no step yet
+    expect(m.setBpm).not.toHaveBeenCalled();
+    beat(result, 1); // 4th full bar after the restart
     expect(m.setBpm).toHaveBeenCalledExactlyOnceWith(105);
   });
 
@@ -251,6 +271,8 @@ describe('useTempoTrainer', () => {
     act(() => result.current.setEnabled(true));
     expect(result.current.barsUntilNext).toBe(4); // full window on arm
 
+    beat(result, 1); // baseline downbeat — still the full window
+    expect(result.current.barsUntilNext).toBe(4);
     beat(result, 1);
     expect(result.current.barsUntilNext).toBe(3);
     beat(result, 2);
