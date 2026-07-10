@@ -7,6 +7,7 @@ import { useDeckExpanded } from './deckState';
 import { usePersistSettings } from './settings';
 import { useUrlState } from './urlState';
 import { useTempoTrainer, type TrainerDriver } from './tempoTrainer';
+import { useRockMode } from './rockMode';
 import { Button } from './components/ui/button';
 import { Wordmark } from './components/Wordmark';
 import { ThemeToggle } from './components/ThemeToggle';
@@ -18,6 +19,7 @@ import { TrainerButton } from './components/TrainerButton';
 import { TempoReadout } from './components/BpmControl';
 import { ControlDeck } from './components/ControlDeck';
 import { TrainerBar } from './components/TrainerBar';
+import { RockMode } from './components/RockMode';
 
 // Lazy-loaded: only fetched when first opened, so neither the radix/shadcn Dialog
 // (AboutModal) nor the calibration UI sits in the initial bundle.
@@ -58,6 +60,7 @@ export function MetronomeApp() {
   const trainer = useTempoTrainer(m); // auto-accelerate BPM every N bars (FT-7)
   trainerDriverRef.current = trainer.driver;
   useUrlState(m, trainer); // shareable/bookmarkable URL — a link's params win over saved settings
+  const rock = useRockMode(m, trainer); // trainer-as-concert takeover (launch → climb → victory)
   const { theme, toggle } = useTheme();
   const { view, toggle: toggleView } = useCenterpieceView();
   const { expanded, toggle: toggleDeck } = useDeckExpanded();
@@ -175,9 +178,10 @@ export function MetronomeApp() {
         </div>
       </main>
 
-      {/* Tempo-trainer mode: the bar appears between the transport and the deck while
-          trainer mode is on (toggled by the TrainerButton above). */}
-      {trainer.enabled && (
+      {/* Tempo-trainer mode: the config bar appears between the transport and the deck
+          while trainer mode is on (toggled by the TrainerButton above). Hidden once the
+          concert launches — the show takes over the whole screen (rock.act !== 'idle'). */}
+      {trainer.enabled && rock.act === 'idle' && (
         <div className="mb-3 flex justify-center">
           <TrainerBar
             target={trainer.target}
@@ -197,7 +201,7 @@ export function MetronomeApp() {
         onToggle={toggleDeck}
         bpm={m.bpm}
         onBpm={trainer.handleUserBpm}
-        spacebarEnabled={!calOpen && !aboutOpen}
+        spacebarEnabled={!calOpen && !aboutOpen && rock.act === 'idle'}
         timeSignatureId={m.timeSignature.id}
         onTimeSignature={m.setTimeSignature}
         subdivision={m.subdivision}
@@ -221,6 +225,34 @@ export function MetronomeApp() {
           <CalibrationSheet open={calOpen} onClose={() => setCalOpen(false)} />
         </Suspense>
       )}
+
+      {/* Rock Mode: full-screen concert takeover while the trainer runs. Renders null
+          when idle, so it's safe to mount unconditionally. Stop closes the show (stays
+          armed); Exit bails out (stop + disarm). */}
+      <RockMode
+        act={rock.act}
+        countdown={rock.countdown}
+        go={rock.go}
+        progress={rock.progress}
+        levelUpKey={rock.levelUpKey}
+        startBpm={rock.startBpm}
+        bpm={m.bpm}
+        target={trainer.target}
+        step={trainer.step}
+        barsUntilNext={trainer.barsUntilNext}
+        beats={m.timeSignature.numerator}
+        accents={m.accents}
+        accentEnabled={m.accentEnabled}
+        currentBeat={m.currentBeat}
+        subdivision={m.subdivision}
+        currentSubdivisionIndex={m.currentSubdivisionIndex}
+        isRunning={m.isRunning}
+        onStop={m.stop}
+        onExit={() => {
+          m.stop();
+          trainer.setEnabled(false);
+        }}
+      />
     </div>
   );
 }

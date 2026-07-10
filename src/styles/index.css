@@ -51,8 +51,11 @@
   --beat: 24 32% 26%; /* dark so regular beats read on cream */
   --pop: 18 62% 48%; /* burnt orange: transport, wordmark "nom", mute */
   --info: 158 32% 56%; /* sage: status / Bluetooth indicator */
-  --mint: 70 32% 42%; /* avocado: volume slider */
+  --mint: 70 32% 42%; /* avocado: volume slider + Rock Mode amp "low" zone */
   --shadow: 38 28% 70%; /* 3D button offset */
+  --spotlight: 42 88% 58%; /* Rock Mode stage beam (warm) */
+  --stage: 24 42% 11%; /* Rock Mode countdown/victory backdrop (dim venue) */
+  --stage-foreground: 40 44% 93%; /* text on the stage backdrop */
 }
 
 :root.theme-dark {
@@ -80,8 +83,11 @@
   --beat: 36 30% 88%; /* cream beats/readout on the dark surface */
   --pop: 4 80% 64%; /* strawberry: transport, wordmark "nom", mute */
   --info: 158 32% 56%; /* sage: status / Bluetooth indicator */
-  --mint: 158 42% 54%;
+  --mint: 158 42% 54%; /* mint: volume slider + Rock Mode amp "low" zone */
   --shadow: 26 30% 5%;
+  --spotlight: 38 92% 62%; /* Rock Mode stage beam (amber) */
+  --stage: 26 34% 6%; /* Rock Mode countdown/victory backdrop (near-black espresso) */
+  --stage-foreground: 36 34% 94%; /* text on the stage backdrop */
 }
 
 /* Both themes are "fun": rounded type everywhere. The readout + mono labels
@@ -111,6 +117,87 @@
     /* Honour iOS safe areas when this later runs inside the Tauri webview. */
     padding: env(safe-area-inset-top) env(safe-area-inset-right)
       env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+}
+
+/*
+ * Rock Mode (the tempo trainer as a concert). Multi-layer gradient backdrops that
+ * can't be expressed as single Tailwind tokens live here, built from the app-owned
+ * color vars — so the components stay token-only (no raw colors / arbitrary values).
+ */
+@layer components {
+  /* Climb: the real app background so the reused metronome stays legible. */
+  .rock-stage {
+    background: hsl(var(--background));
+  }
+  /* Launch / victory: dim venue backdrops. */
+  .rock-scrim {
+    background:
+      radial-gradient(120% 90% at 50% 40%, hsl(var(--spotlight) / 0.28), transparent 60%),
+      hsl(var(--stage));
+    color: hsl(var(--stage-foreground));
+  }
+  .rock-scrim-hot {
+    background:
+      radial-gradient(120% 90% at 50% 45%, hsl(var(--pop) / 0.35), transparent 62%),
+      hsl(var(--stage));
+  }
+  /* Stage beams from the top corners (ambient). */
+  .rock-beam {
+    position: absolute;
+    top: -6%;
+    width: 40%;
+    height: 64%;
+    pointer-events: none;
+    filter: blur(10px);
+    opacity: 0.35;
+    z-index: 0;
+  }
+  .rock-beam-l {
+    left: -6%;
+    background: linear-gradient(160deg, hsl(var(--spotlight) / 0.5), transparent 60%);
+    transform: rotate(10deg);
+  }
+  .rock-beam-r {
+    right: -6%;
+    background: linear-gradient(200deg, hsl(var(--spotlight) / 0.42), transparent 60%);
+    transform: rotate(-10deg);
+  }
+  /* Glow behind the arc, intensifying with progress (opacity set inline). */
+  .rock-halo {
+    position: absolute;
+    top: 8%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 78%;
+    height: 38%;
+    pointer-events: none;
+    z-index: 0;
+    background: radial-gradient(closest-side, hsl(var(--primary) / 0.28), transparent 72%);
+    filter: blur(4px);
+  }
+  /* Amp-gain meter fill: mint (low) → info (mid) → pop (hot). */
+  .rock-amp-fill {
+    background: linear-gradient(90deg, hsl(var(--mint)), hsl(var(--info)) 55%, hsl(var(--pop)));
+    box-shadow: 0 0 16px hsl(var(--pop) / 0.5);
+    transition: width 500ms cubic-bezier(0.4, 1.3, 0.5, 1);
+  }
+  /* Text glows for the dramatic countdown / GO. */
+  .rock-glow-spot {
+    text-shadow: 0 0 60px hsl(var(--spotlight) / 0.7);
+  }
+  .rock-glow-pop {
+    text-shadow: 0 0 60px hsl(var(--pop));
+  }
+}
+
+/* Respect reduced-motion: keep the show, drop the flashing/zooming. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-rock-count,
+  .animate-rock-go,
+  .animate-rock-levelup,
+  .animate-rock-victory {
+    animation: none !important;
   }
 }
 

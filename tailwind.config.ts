@@ -18,6 +18,11 @@ const config: Config = {
         beat: 'hsl(var(--beat) / <alpha-value>)',
         pop: 'hsl(var(--pop) / <alpha-value>)',
         info: 'hsl(var(--info) / <alpha-value>)',
+        mint: 'hsl(var(--mint) / <alpha-value>)',
+        // Rock Mode (concert takeover): stage backdrop + spotlight beams.
+        spotlight: 'hsl(var(--spotlight) / <alpha-value>)',
+        stage: 'hsl(var(--stage) / <alpha-value>)',
+        'stage-foreground': 'hsl(var(--stage-foreground) / <alpha-value>)',
 
         background: 'hsl(var(--background) / <alpha-value>)',
         foreground: 'hsl(var(--foreground) / <alpha-value>)',
@@ -60,6 +65,7 @@ const config: Config = {
         'transport-play-active': '0 1px 0 hsl(var(--primary-foreground))',
         // Beat-pill glows.
         'glow-primary': '0 0 22px -2px hsl(var(--primary))',
+        'glow-pop': '0 0 22px -2px hsl(var(--pop))',
         'glow-beat': '0 0 18px -4px hsl(var(--beat))',
         'glow-beat-sm': '0 0 10px -3px hsl(var(--beat))',
         // Slider thumb (used by the shadcn Slider).
@@ -101,11 +107,36 @@ const config: Config = {
           '0%, 100%': { color: 'hsl(var(--beat))' },
           '50%': { color: 'hsl(var(--pop))' },
         },
+        // Rock Mode acts.
+        'rock-count': {
+          '0%': { opacity: '0', transform: 'scale(2.2)' },
+          '30%': { opacity: '1', transform: 'scale(1)' },
+          '100%': { opacity: '0.85', transform: 'scale(0.9)' },
+        },
+        'rock-go': {
+          '0%': { opacity: '0', transform: 'scale(0.4)' },
+          '45%': { opacity: '1', transform: 'scale(1.25)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        'rock-levelup': {
+          '0%': { opacity: '0', transform: 'translate(-50%, 10%) scale(0.6)' },
+          '25%': { opacity: '1', transform: 'translate(-50%, -30%) scale(1.1)' },
+          '100%': { opacity: '0', transform: 'translate(-50%, -80%) scale(1)' },
+        },
+        'rock-victory': {
+          '0%': { opacity: '0', transform: 'scale(0.5) rotate(-4deg)' },
+          '50%': { transform: 'scale(1.12) rotate(2deg)' },
+          '100%': { opacity: '1', transform: 'scale(1) rotate(0deg)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 120ms ease-out',
         'beat-pop': 'beat-pop 140ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         'bpm-flash': 'bpm-flash 600ms ease-in-out',
+        'rock-count': 'rock-count 600ms ease-out',
+        'rock-go': 'rock-go 600ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'rock-levelup': 'rock-levelup 700ms ease-out',
+        'rock-victory': 'rock-victory 700ms cubic-bezier(0.34, 1.56, 0.64, 1)',
       },
     },
   },
