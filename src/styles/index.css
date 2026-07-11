@@ -11,6 +11,19 @@
   --mascot-eye: 0 0% 100%; /* mascot eyes */
   --pop-foreground: 0 0% 100%; /* text on the pop-colored transport button */
   --overlay: 0 0% 0%; /* modal backdrop (used with an opacity modifier) */
+
+  /* Rock Mode punk/glam neon palette — theme-INVARIANT (same loud colors in light
+     + dark). They sit on the near-black --rk-ink stage; the reused metronome stays
+     legible in its own spotlight pool (which uses the per-theme --background). */
+  --rk-pink: 327 100% 59%;
+  --rk-blue: 220 100% 59%;
+  --rk-yellow: 48 100% 56%;
+  --rk-red: 0 100% 59%;
+  --rk-cyan: 180 78% 51%;
+  --rk-ink: 255 24% 6%; /* near-black stage */
+  --rk-ink-2: 252 35% 12%; /* stage top glow */
+  --rk-outline: 0 0% 0%; /* punk cut-out outline + hard drop shadow */
+  --rk-paper: 0 0% 100%; /* ransom-note white */
 }
 
 /*
@@ -53,9 +66,6 @@
   --info: 158 32% 56%; /* sage: status / Bluetooth indicator */
   --mint: 70 32% 42%; /* avocado: volume slider + Rock Mode amp "low" zone */
   --shadow: 38 28% 70%; /* 3D button offset */
-  --spotlight: 42 88% 58%; /* Rock Mode stage beam (warm) */
-  --stage: 24 42% 11%; /* Rock Mode countdown/victory backdrop (dim venue) */
-  --stage-foreground: 40 44% 93%; /* text on the stage backdrop */
 }
 
 :root.theme-dark {
@@ -85,9 +95,6 @@
   --info: 158 32% 56%; /* sage: status / Bluetooth indicator */
   --mint: 158 42% 54%; /* mint: volume slider + Rock Mode amp "low" zone */
   --shadow: 26 30% 5%;
-  --spotlight: 38 92% 62%; /* Rock Mode stage beam (amber) */
-  --stage: 26 34% 6%; /* Rock Mode countdown/victory backdrop (near-black espresso) */
-  --stage-foreground: 36 34% 94%; /* text on the stage backdrop */
 }
 
 /* Both themes are "fun": rounded type everywhere. The readout + mono labels
@@ -121,82 +128,131 @@
 }
 
 /*
- * Rock Mode (the tempo trainer as a concert). Multi-layer gradient backdrops that
- * can't be expressed as single Tailwind tokens live here, built from the app-owned
- * color vars — so the components stay token-only (no raw colors / arbitrary values).
+ * Rock Mode (the tempo trainer as a punk/glam concert). Multi-layer gradient / mask
+ * backdrops that can't be expressed as single Tailwind tokens live here, built from
+ * the app-owned color vars — so the components stay token-only (no raw colors /
+ * arbitrary values). Motion (spin / flash / headbang …) is applied with `animate-*`
+ * utilities from tailwind.config.ts.
  */
 @layer components {
-  /* Climb: the real app background so the reused metronome stays legible. */
+  /* The near-black stage: theme-invariant ink with a subtle top glow. */
   .rock-stage {
-    background: hsl(var(--background));
-  }
-  /* Launch / victory: dim venue backdrops. */
-  .rock-scrim {
     background:
-      radial-gradient(120% 90% at 50% 40%, hsl(var(--spotlight) / 0.28), transparent 60%),
-      hsl(var(--stage));
-    color: hsl(var(--stage-foreground));
+      radial-gradient(120% 80% at 50% 8%, hsl(var(--rk-ink-2)), transparent 60%),
+      hsl(var(--rk-ink));
   }
-  .rock-scrim-hot {
-    background:
-      radial-gradient(120% 90% at 50% 45%, hsl(var(--pop) / 0.35), transparent 62%),
-      hsl(var(--stage));
-  }
-  /* Stage beams from the top corners (ambient). */
-  .rock-beam {
+  /* Comic speed-lines: fine radial rays, faded out over the center via a mask so
+     the metronome / lettering stay clear. Spin is added with `animate-rock-spin`. */
+  .rock-speed {
     position: absolute;
-    top: -6%;
-    width: 40%;
-    height: 64%;
-    pointer-events: none;
-    filter: blur(10px);
-    opacity: 0.35;
-    z-index: 0;
+    inset: -30%; /* oversized so the rotating rays always fill the frame */
+    background: repeating-conic-gradient(
+      from 0deg at 50% 50%,
+      hsl(var(--rk-paper) / 0.55) 0deg 0.55deg,
+      transparent 0.55deg 2.4deg
+    );
+    -webkit-mask: radial-gradient(circle at 50% 50%, transparent 20%, hsl(var(--rk-outline)) 44%);
+    mask: radial-gradient(circle at 50% 50%, transparent 20%, hsl(var(--rk-outline)) 44%);
+    opacity: 0.16;
   }
-  .rock-beam-l {
-    left: -6%;
-    background: linear-gradient(160deg, hsl(var(--spotlight) / 0.5), transparent 60%);
-    transform: rotate(10deg);
-  }
-  .rock-beam-r {
-    right: -6%;
-    background: linear-gradient(200deg, hsl(var(--spotlight) / 0.42), transparent 60%);
-    transform: rotate(-10deg);
-  }
-  /* Glow behind the arc, intensifying with progress (opacity set inline). */
-  .rock-halo {
+  /* Second, tinted layer (spun the other way with `animate-rock-spin-rev`). */
+  .rock-speed-alt {
     position: absolute;
-    top: 8%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 78%;
-    height: 38%;
-    pointer-events: none;
-    z-index: 0;
-    background: radial-gradient(closest-side, hsl(var(--primary) / 0.28), transparent 72%);
-    filter: blur(4px);
+    inset: -30%;
+    background: repeating-conic-gradient(
+      from 4deg at 50% 50%,
+      hsl(var(--primary)) 0deg 0.5deg,
+      transparent 0.5deg 3.4deg
+    );
+    -webkit-mask: radial-gradient(circle at 50% 50%, transparent 20%, hsl(var(--rk-outline)) 44%);
+    mask: radial-gradient(circle at 50% 50%, transparent 20%, hsl(var(--rk-outline)) 44%);
+    opacity: 0.12;
   }
-  /* Amp-gain meter fill: mint (low) → info (mid) → pop (hot). */
-  .rock-amp-fill {
-    background: linear-gradient(90deg, hsl(var(--mint)), hsl(var(--info)) 55%, hsl(var(--pop)));
-    box-shadow: 0 0 16px hsl(var(--pop) / 0.5);
+  /* Sgt-Pepper / comic halftone dot texture. */
+  .rock-halftone {
+    background-image: radial-gradient(hsl(var(--rk-paper)) 1px, transparent 1.4px);
+    background-size: 14px 14px;
+    opacity: 0.07;
+  }
+  /* Spotlight pool: a lens of the real app background that keeps the untouched
+     metronome legible in either theme against the dark stage. */
+  .rock-pool {
+    background: radial-gradient(
+      closest-side,
+      hsl(var(--background)) 55%,
+      hsl(var(--background) / 0.35) 74%,
+      transparent 82%
+    );
+    filter: blur(2px);
+  }
+  /* Amp-gain meter: neon cyan → yellow → pink fill on an inked track. */
+  .rock-meter {
+    background: hsl(var(--rk-ink-2));
+    border: 2px solid hsl(var(--rk-outline));
+    box-shadow: 0 0 0 1px hsl(var(--rk-pink) / 0.4);
+  }
+  .rock-meter-fill {
+    background: linear-gradient(90deg, hsl(var(--rk-cyan)), hsl(var(--rk-yellow)) 48%, hsl(var(--rk-pink)));
+    box-shadow: 0 0 16px hsl(var(--rk-pink));
     transition: width 500ms cubic-bezier(0.4, 1.3, 0.5, 1);
   }
-  /* Text glows for the dramatic countdown / GO. */
-  .rock-glow-spot {
-    text-shadow: 0 0 60px hsl(var(--spotlight) / 0.7);
+  /* Ransom-note cut-out letter: hard outline + offset shadow (bg + rotation inline). */
+  .rock-ransom-ch {
+    display: inline-block;
+    line-height: 0.9;
+    padding: 0.06em 0.16em;
+    border: 2px solid hsl(var(--rk-outline));
+    box-shadow: 3px 3px 0 hsl(var(--rk-outline) / 0.55);
   }
-  .rock-glow-pop {
-    text-shadow: 0 0 60px hsl(var(--pop));
+  /* Yellow ransom marquee pill (next-bump ticker). */
+  .rock-marquee {
+    background: hsl(var(--rk-yellow));
+    color: hsl(var(--rk-ink));
+    box-shadow: 4px 4px 0 hsl(var(--rk-outline));
+  }
+  /* Big punk STOP button. */
+  .rock-stop {
+    background: hsl(var(--rk-red));
+    color: hsl(var(--rk-paper));
+    border: 3px solid hsl(var(--rk-outline));
+    box-shadow: 6px 6px 0 hsl(var(--rk-outline));
+  }
+  .rock-stop:active {
+    box-shadow: 2px 2px 0 hsl(var(--rk-outline));
+  }
+  /* Countdown poster number: filled neon, black outline stroke + offset shadow. */
+  .rock-count {
+    color: hsl(var(--rk-yellow));
+    -webkit-text-stroke: 5px hsl(var(--rk-outline));
+    text-shadow: 7px 7px 0 hsl(var(--rk-pink));
+  }
+  .rock-count-go {
+    color: hsl(var(--rk-red));
+    -webkit-text-stroke: 6px hsl(var(--rk-outline));
+    text-shadow: 8px 8px 0 hsl(var(--rk-blue));
+  }
+  /* Victory BPM number: cyan neon with the same punk outline treatment. */
+  .rock-victory-num {
+    color: hsl(var(--rk-cyan));
+    -webkit-text-stroke: 4px hsl(var(--rk-outline));
+    text-shadow: 6px 6px 0 hsl(var(--rk-pink));
   }
 }
 
-/* Respect reduced-motion: keep the show, drop the flashing/zooming. */
+/* Respect reduced-motion: keep the show, drop the spinning / flashing / bouncing. */
 @media (prefers-reduced-motion: reduce) {
+  .animate-rock-spin,
+  .animate-rock-spin-rev,
   .animate-rock-count,
   .animate-rock-go,
-  .animate-rock-levelup,
-  .animate-rock-victory {
+  .animate-rock-flare,
+  .animate-rock-victory,
+  .animate-rock-headbang,
+  .animate-rock-swing,
+  .animate-rock-strum,
+  .animate-rock-fall,
+  .animate-rock-pulse,
+  .animate-rock-boltpulse {
     animation: none !important;
   }
 }

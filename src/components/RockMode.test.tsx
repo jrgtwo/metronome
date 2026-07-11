@@ -50,6 +50,13 @@ describe('RockMode', () => {
     expect(screen.getByText('128')).toBeInTheDocument();
   });
 
+  it('has the shredding mascot performing during the climb and on victory', () => {
+    const { rerender } = render(<RockMode {...props({ act: 'climb' })} />);
+    expect(screen.getByTestId('rockstar-mascot')).toBeInTheDocument();
+    rerender(<RockMode {...props({ act: 'victory' })} />);
+    expect(screen.getByTestId('rockstar-mascot')).toBeInTheDocument();
+  });
+
   it('shows the amp-gain meter reflecting climb progress', () => {
     render(<RockMode {...props({ act: 'climb', progress: 0.5 })} />);
     const meter = screen.getByRole('progressbar');
@@ -73,7 +80,8 @@ describe('RockMode', () => {
 
   it('shows the victory payoff with the reached target', () => {
     render(<RockMode {...props({ act: 'victory', target: 140 })} />);
-    expect(screen.getByText(/shredded/i)).toBeInTheDocument();
+    // The title is ransom-note lettering; its intact phrase is the accessible name.
+    expect(screen.getByLabelText(/shredded/i)).toBeInTheDocument();
     expect(screen.getByText('140')).toBeInTheDocument();
   });
 

@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
-import { X, Square, ChevronsUp, Zap } from 'lucide-react';
+import { X } from 'lucide-react';
 import type { SubdivisionId } from '@fretwork/lib';
 import type { Act } from '../rockMode';
 import { BeatDots } from './BeatDots';
 import { TempoReadout } from './BpmControl';
+import { RockstarMascot } from './RockstarMascot';
+import { RansomText } from './RansomText';
 
 export interface RockModeProps {
   act: Act;
@@ -36,11 +38,12 @@ export interface RockModeProps {
 }
 
 /**
- * The Rock Mode overlay — a full-screen concert framing the tempo trainer. It never
- * redraws the metronome: the climb reuses the real `BeatDots` + `TempoReadout` on the
- * app background, dressed with stage glow, a `LIVE` badge, the amp-gain meter, the
- * next-bump marquee, and STOP. The launch count-in and the victory payoff are brief
- * dramatic full screens (the dark `--stage`) with no live metronome on them.
+ * The Rock Mode overlay — a full-screen punk/glam concert framing the tempo trainer
+ * (Bowie lightning bolts, comic speed-lines, Sex-Pistols ransom lettering, a shredding
+ * mascot). It never redraws the metronome: the climb reuses the real `BeatDots` +
+ * `TempoReadout`, sitting in a lit "spotlight pool" so they stay legible on the dark
+ * stage in either theme. The launch count-in and victory payoff are brief dramatic
+ * full screens.
  *
  * Fully presentational: all state (the act, progress, level-up key) arrives as props
  * from `useRockMode`, so it unit-tests without the engine.
@@ -61,25 +64,70 @@ export function RockMode(props: RockModeProps) {
   if (act === 'idle' || act === 'done') return null;
   if (act === 'launch') return <LaunchCountdown countdown={props.countdown} go={props.go} />;
   if (act === 'victory')
-    return <VictoryScreen target={props.target} startBpm={props.startBpm} />;
+    return (
+      <VictoryScreen
+        target={props.target}
+        startBpm={props.startBpm}
+        bpm={props.bpm}
+        isRunning={props.isRunning}
+      />
+    );
   return <ConcertHud {...props} />;
 }
 
-/** Act 1 — the beat-synced race-start count-in. */
+/** The shared stage dressing behind every act: ink backdrop, spinning comic
+ *  speed-lines, halftone texture, and the two Bowie lightning bolts. */
+function StageFX() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      <div className="rock-stage absolute inset-0" />
+      <div className="rock-speed animate-rock-spin" />
+      <div className="rock-speed-alt animate-rock-spin-rev" />
+      <div className="rock-halftone absolute inset-0" />
+      <Bolt side="l" />
+      <Bolt side="r" />
+    </div>
+  );
+}
+
+/** A Bowie/Ziggy lightning bolt down one edge of the stage, pulsing on the beat. */
+function Bolt({ side }: { side: 'l' | 'r' }) {
+  const style =
+    side === 'l'
+      ? { left: '-14px', top: '8%', color: 'hsl(var(--rk-blue))', transform: 'rotate(-8deg)' }
+      : { right: '-10px', bottom: '14%', color: 'hsl(var(--rk-red))', transform: 'rotate(8deg) scaleX(-1)' };
+  return (
+    <div
+      className="animate-rock-boltpulse absolute w-28"
+      style={{ ...style, filter: 'drop-shadow(0 0 12px currentColor)' }}
+      aria-hidden
+    >
+      <svg viewBox="0 0 60 160" fill="currentColor" className="block h-auto w-full">
+        <polygon points="34,0 6,92 26,92 14,160 54,58 30,58 44,0" />
+      </svg>
+    </div>
+  );
+}
+
+/** Act 1 — the beat-synced race-start count-in, punk poster type. */
 function LaunchCountdown({ countdown, go }: { countdown: number; go: boolean }) {
   return (
-    <div className="rock-scrim fixed inset-0 z-50 flex flex-col items-center justify-center gap-3">
-      <p className="font-display text-xl font-semibold uppercase tracking-label-sm text-stage-foreground/75">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6">
+      <StageFX />
+      <p
+        className="relative z-10 font-punk text-3xl uppercase tracking-label-sm text-rk-paper"
+        style={{ textShadow: '3px 3px 0 hsl(var(--rk-pink))' }}
+      >
         Get ready
       </p>
       {go ? (
-        <span key="go" className="rock-glow-pop animate-rock-go font-display text-9xl font-bold text-pop">
+        <span key="go" className="rock-count-go animate-rock-go relative z-10 font-punk text-9xl leading-none">
           GO!
         </span>
       ) : (
         <span
           key={countdown}
-          className="rock-glow-spot animate-rock-count font-display text-9xl font-bold leading-none text-spotlight"
+          className="rock-count animate-rock-count relative z-10 font-punk text-9xl leading-none"
         >
           {countdown}
         </span>
@@ -88,54 +136,67 @@ function LaunchCountdown({ countdown, go }: { countdown: number; go: boolean }) 
   );
 }
 
-/** Act 3 — the victory payoff. */
-function VictoryScreen({ target, startBpm }: { target: number; startBpm: number | null }) {
+/** Act 3 — the victory payoff: the mascot shreds, ransom title, big final BPM, confetti. */
+function VictoryScreen({
+  target,
+  startBpm,
+  bpm,
+  isRunning,
+}: {
+  target: number;
+  startBpm: number | null;
+  bpm: number;
+  isRunning: boolean;
+}) {
   const gained = startBpm !== null ? target - startBpm : null;
   return (
-    <div className="rock-scrim rock-scrim-hot fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 text-center">
-      <p className="animate-rock-victory font-display text-5xl font-bold leading-tight text-stage-foreground">
-        You
-        <br />
-        shredded it!
-      </p>
-      <span className="font-display text-8xl font-bold leading-none text-spotlight">{target}</span>
-      <p className="font-display text-xl font-semibold uppercase tracking-label-sm text-pop">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 overflow-hidden text-center">
+      <StageFX />
+      <RansomText text="You shredded it" className="relative z-10 max-w-arc text-4xl" />
+      <RockstarMascot bpm={bpm} isRunning={isRunning} className="relative z-10 w-52 drop-shadow-2xl" />
+      <span className="rock-victory-num animate-rock-victory relative z-10 font-punk text-8xl leading-none">
+        {target}
+      </span>
+      <p className="relative z-10 font-punk text-lg uppercase tracking-label-sm text-rk-yellow">
         Target smashed{gained !== null ? ` · +${gained} BPM` : ''}
       </p>
+      <Confetti />
     </div>
   );
 }
 
-/** Act 2 — the climb HUD framing the real metronome. */
+/** Act 2 — the climb HUD framing the real metronome, with the mascot performing stage-left. */
 function ConcertHud(props: RockModeProps) {
   const { progress, levelUpKey, bpm, target, step, startBpm, barsUntilNext } = props;
   const pct = Math.round(progress * 100);
   return (
-    <div className="rock-stage fixed inset-0 z-50 flex flex-col">
-      {/* stage energy layered on the real app background (metronome stays legible) */}
-      <div className="rock-beam rock-beam-l" aria-hidden />
-      <div className="rock-beam rock-beam-r" aria-hidden />
-      <div className="rock-halo" aria-hidden style={{ opacity: 0.45 + progress * 0.5 }} />
+    <div className="fixed inset-0 z-50 flex flex-col">
+      <StageFX />
 
-      {/* top bar */}
+      {/* top bar: ON AIR + bail-out */}
       <div className="relative z-10 flex items-center justify-between px-5 pt-5">
-        <span className="flex items-center gap-2 font-display text-sm font-bold uppercase tracking-label-sm text-pop">
-          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-pop shadow-glow-pop" aria-hidden />
-          Live
+        <span className="flex items-center gap-2 font-punk text-lg uppercase tracking-label-sm text-rk-paper">
+          <span
+            aria-hidden
+            className="animate-rock-pulse h-2.5 w-2.5 rounded-full bg-rk-red"
+            style={{ boxShadow: '0 0 14px hsl(var(--rk-red))' }}
+          />
+          On air
         </span>
         <button
           type="button"
           onClick={props.onExit}
           aria-label="Exit Rock Mode"
-          className="grid h-10 w-10 place-items-center rounded-full bg-foreground/10 text-foreground transition-colors hover:bg-foreground/20"
+          className="grid h-10 w-10 place-items-center rounded-full border-2 border-rk-paper text-rk-paper transition-colors hover:bg-rk-paper/15"
         >
           <X className="h-5 w-5" />
         </button>
       </div>
 
-      {/* the real metronome, untouched */}
+      {/* the real metronome (untouched) in a lit spotlight pool, mascot performing stage-left */}
       <div className="relative z-10 flex flex-1 items-center justify-center">
-        <div className="w-full max-w-arc">
+        <div className="rock-pool absolute left-1/2 top-1/2 h-72 w-80 -translate-x-1/2 -translate-y-1/2" />
+        <div className="relative w-full max-w-arc">
           <BeatDots
             beats={props.beats}
             accents={props.accents}
@@ -148,34 +209,38 @@ function ConcertHud(props: RockModeProps) {
             <TempoReadout bpm={bpm} large />
           </BeatDots>
         </div>
+        <RockstarMascot
+          bpm={bpm}
+          isRunning={props.isRunning}
+          className="pointer-events-none absolute bottom-0 left-0 z-10 w-36 drop-shadow-2xl"
+        />
       </div>
 
-      {/* LEVEL UP flare — its own reserved band below the metronome (so it never
-          overlaps the beat pills or the BPM number). Only rendered after an actual
-          bump, and `opacity-0` at rest so it flashes on the milestone then vanishes
-          (the animation has no forwards fill-mode). Re-keyed per bump to re-fire. */}
-      <div className="relative z-10 h-10">
+      {/* LEVEL UP ransom flare — its own reserved band below the metronome. Only
+          rendered after an actual bump, and `opacity-0` at rest so it flashes on the
+          milestone then vanishes (the animation has no forwards fill). Re-keyed per
+          bump to re-fire. */}
+      <div className="relative z-10 flex h-12 items-center justify-center">
         {levelUpKey > 0 && (
           <span
             key={levelUpKey}
             data-testid="levelup-flare"
             data-key={levelUpKey}
-            className="animate-rock-levelup pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 whitespace-nowrap font-display text-2xl font-bold uppercase tracking-label-sm text-pop opacity-0"
+            className="animate-rock-flare pointer-events-none inline-block opacity-0"
           >
-            <Zap className="mr-1 inline h-6 w-6" aria-hidden />
-            Level up +{step}
+            <RansomText text={`Level up +${step}`} className="text-xl" />
           </span>
         )}
       </div>
 
       {/* amp-gain meter: start → target */}
       <div className="relative z-10 px-6">
-        <div className="mb-2 flex justify-between font-display text-xs font-semibold uppercase tracking-label-sm text-muted-foreground">
+        <div className="mb-1.5 flex justify-between font-punk text-sm uppercase tracking-label-sm text-rk-paper">
           <span>
-            Start <b className="text-foreground">{startBpm ?? bpm}</b>
+            Start <b className="text-rk-cyan">{startBpm ?? bpm}</b>
           </span>
           <span>
-            Target <b className="text-foreground">{target}</b>
+            Target <b className="text-rk-pink">{target}</b>
           </span>
         </div>
         <div
@@ -184,18 +249,17 @@ function ConcertHud(props: RockModeProps) {
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={pct}
-          className="h-5 overflow-hidden rounded-full border border-border bg-foreground/10"
+          className="rock-meter h-5 overflow-hidden rounded-md"
         >
-          <div className="rock-amp-fill h-full rounded-full" style={{ width: `${pct}%` }} />
+          <div className="rock-meter-fill h-full" style={{ width: `${pct}%` }} />
         </div>
       </div>
 
       {/* next-bump marquee */}
       <div className="relative z-10 flex justify-center pt-4">
         {barsUntilNext !== null && (
-          <span className="flex items-center gap-2 rounded-full bg-pop/10 px-4 py-2 font-display text-lg font-semibold tabular-nums text-pop">
-            <ChevronsUp className="h-5 w-5" aria-hidden />+{step} BPM in {barsUntilNext}{' '}
-            {barsUntilNext === 1 ? 'bar' : 'bars'}
+          <span className="rock-marquee -rotate-1 px-4 py-2 font-punk text-lg uppercase tracking-label-sm">
+            +{step} BPM in {barsUntilNext} {barsUntilNext === 1 ? 'bar' : 'bars'}
           </span>
         )}
       </div>
@@ -205,12 +269,43 @@ function ConcertHud(props: RockModeProps) {
         <button
           type="button"
           onClick={props.onStop}
-          className="flex items-center gap-2 rounded-2xl bg-pop px-14 py-4 font-display text-xl font-bold uppercase tracking-label-sm text-pop-foreground shadow-transport transition-transform active:translate-y-press-lg active:shadow-btn"
+          className="rock-stop -rotate-1 px-14 py-3 font-punk text-2xl uppercase tracking-label-sm transition-transform active:translate-x-px active:translate-y-1"
         >
-          <Square className="h-5 w-5 fill-current" aria-hidden />
           Stop
         </button>
       </div>
+    </div>
+  );
+}
+
+// Deterministic confetti (no randomness → stable render + tests). Each piece's
+// column, color, fall duration, and delay come from its index.
+const RK_CONFETTI_COLORS = ['--rk-pink', '--rk-blue', '--rk-yellow', '--rk-red', '--rk-cyan'];
+const CONFETTI = Array.from({ length: 60 }, (_, i) => ({
+  left: `${(i * 37) % 100}%`,
+  color: `hsl(var(${RK_CONFETTI_COLORS[i % RK_CONFETTI_COLORS.length]}))`,
+  duration: `${1800 + ((i * 53) % 1600)}ms`,
+  delay: `${(i * 29) % 500}ms`,
+}));
+
+function Confetti() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      {CONFETTI.map((c, i) => (
+        <span
+          key={i}
+          className="animate-rock-fall absolute"
+          style={{
+            top: '-24px',
+            left: c.left,
+            width: '10px',
+            height: '18px',
+            backgroundColor: c.color,
+            animationDuration: c.duration,
+            animationDelay: c.delay,
+          }}
+        />
+      ))}
     </div>
   );
 }
