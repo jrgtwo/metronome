@@ -148,19 +148,8 @@ const config: Config = {
           '50%': { transform: 'scale(1.12) rotate(2deg)' },
           '100%': { opacity: '1', transform: 'scale(1) rotate(0deg)' },
         },
-        // Mascot: beat-synced headbang, pendulum swing (pivots at the base), strum.
-        'rock-headbang': {
-          '0%, 100%': { transform: 'rotate(-7deg)' },
-          '50%': { transform: 'rotate(7deg) translateY(-3px)' },
-        },
-        'rock-swing': {
-          '0%, 100%': { transform: 'rotate(14deg)' },
-          '50%': { transform: 'rotate(-14deg)' },
-        },
-        'rock-strum': {
-          '0%, 100%': { transform: 'rotate(-2deg)' },
-          '50%': { transform: 'rotate(2deg)' },
-        },
+        // The mascot's headbang / pendulum swing / strum are driven imperatively
+        // (rAF phase-locked to the beat clock) in RockstarMascot — see that file.
         'rock-fall': {
           '0%': { transform: 'translateY(-30px) rotate(0)' },
           '100%': { transform: 'translateY(860px) rotate(720deg)' },
@@ -181,10 +170,6 @@ const config: Config = {
         'rock-go': 'rock-go 600ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         'rock-flare': 'rock-flare 900ms ease-out',
         'rock-victory': 'rock-victory 700ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-        // Duration is overridden inline from the live BPM (see RockstarMascot).
-        'rock-headbang': 'rock-headbang 480ms ease-in-out infinite',
-        'rock-swing': 'rock-swing 960ms ease-in-out infinite',
-        'rock-strum': 'rock-strum 240ms ease-in-out infinite',
         'rock-fall': 'rock-fall 2400ms linear forwards',
         'rock-pulse': 'rock-pulse 1000ms ease-in-out infinite',
         'rock-boltpulse': 'rock-boltpulse 1200ms ease-in-out infinite',

@@ -70,6 +70,8 @@ export function RockMode(props: RockModeProps) {
         startBpm={props.startBpm}
         bpm={props.bpm}
         isRunning={props.isRunning}
+        currentBeat={props.currentBeat}
+        beats={props.beats}
       />
     );
   return <ConcertHud {...props} />;
@@ -142,18 +144,28 @@ function VictoryScreen({
   startBpm,
   bpm,
   isRunning,
+  currentBeat,
+  beats,
 }: {
   target: number;
   startBpm: number | null;
   bpm: number;
   isRunning: boolean;
+  currentBeat: number;
+  beats: number;
 }) {
   const gained = startBpm !== null ? target - startBpm : null;
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 overflow-hidden text-center">
       <StageFX />
       <RansomText text="You shredded it" className="relative z-10 max-w-arc text-4xl" />
-      <RockstarMascot bpm={bpm} isRunning={isRunning} className="relative z-10 w-52 drop-shadow-2xl" />
+      <RockstarMascot
+        bpm={bpm}
+        isRunning={isRunning}
+        currentBeat={currentBeat}
+        beats={beats}
+        className="relative z-10 w-52 drop-shadow-2xl"
+      />
       <span className="rock-victory-num animate-rock-victory relative z-10 font-punk text-8xl leading-none">
         {target}
       </span>
@@ -212,6 +224,8 @@ function ConcertHud(props: RockModeProps) {
         <RockstarMascot
           bpm={bpm}
           isRunning={props.isRunning}
+          currentBeat={props.currentBeat}
+          beats={props.beats}
           className="pointer-events-none absolute bottom-0 left-0 z-10 w-36 drop-shadow-2xl"
         />
       </div>
